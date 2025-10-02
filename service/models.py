@@ -1,7 +1,7 @@
 """Database models for the ShopCart resource."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import validates, relationship
 
@@ -9,6 +9,11 @@ logger = logging.getLogger("flask.app")
 
 # Create the SQLAlchemy object to be initialized later in init_db()
 db = SQLAlchemy()
+
+
+def utc_now():
+    """Return current time in UTC as a timezone-aware datetime"""
+    return datetime.now(timezone.utc)
 
 
 class DataValidationError(Exception):
@@ -25,9 +30,9 @@ class ShopCart(db.Model):
     ##################################################
     shopcart_id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, nullable=False, unique=True, index=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     updated_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, nullable=False, default=utc_now, onupdate=utc_now
     )
 
     items = relationship(
@@ -55,7 +60,7 @@ class ShopCart(db.Model):
     def update(self):
         """Save updates to this shopcart"""
         logger.info("Updating shopcart id=%s", self.shopcart_id)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = utc_now()
 
         try:
             db.session.commit()
