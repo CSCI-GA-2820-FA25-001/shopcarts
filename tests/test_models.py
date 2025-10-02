@@ -14,17 +14,16 @@
 # limitations under the License.
 ######################################################################
 
-"""
-Test cases for Pet Model
-"""
+"""Test cases for ShopCart and Item models."""
 
 # pylint: disable=duplicate-code
 import os
 import logging
+from decimal import Decimal
 from unittest import TestCase
 from wsgi import app
-from service.models import YourResourceModel, DataValidationError, db
-from .factories import YourResourceModelFactory
+from service.models import ShopCart, Item, DataValidationError, db
+from .factories import ShopCartFactory, ItemFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -32,11 +31,11 @@ DATABASE_URI = os.getenv(
 
 
 ######################################################################
-#  YourResourceModel   M O D E L   T E S T   C A S E S
+#  S H O P C A R T   M O D E L   T E S T   C A S E S
 ######################################################################
 # pylint: disable=too-many-public-methods
-class TestYourResourceModel(TestCase):
-    """Test Cases for YourResourceModel Model"""
+class TestShopCartModel(TestCase):
+    """Test Cases for ShopCart and Item models"""
 
     @classmethod
     def setUpClass(cls):
@@ -54,26 +53,99 @@ class TestYourResourceModel(TestCase):
 
     def setUp(self):
         """This runs before each test"""
-        db.session.query(YourResourceModel).delete()  # clean up the last tests
+        db.session.query(Item).delete()
+        db.session.query(ShopCart).delete()
         db.session.commit()
 
     def tearDown(self):
         """This runs after each test"""
         db.session.remove()
 
-    ######################################################################
+    ##################################################################
     #  T E S T   C A S E S
-    ######################################################################
+    ##################################################################
 
-    def test_example_replace_this(self):
-        """It should create a YourResourceModel"""
-        # Todo: Remove this test case example
-        resource = YourResourceModelFactory()
-        resource.create()
-        self.assertIsNotNone(resource.id)
-        found = YourResourceModel.all()
-        self.assertEqual(len(found), 1)
-        data = YourResourceModel.find(resource.id)
-        self.assertEqual(data.name, resource.name)
+    def test_create_shopcart(self):
+        """It should create a shopcart with a unique identifier"""
+        shopcart = ShopCartFactory()
+        shopcart.create()
 
-    # Todo: Add your test cases here...
+        self.assertIsNotNone(shopcart.shopcart_id)
+        self.assertGreater(shopcart.shopcart_id, 0)
+        stored = ShopCart.find(shopcart.shopcart_id)
+        self.assertEqual(stored.customer_id, shopcart.customer_id)
+
+    def test_prevent_duplicate_customer_shopcart(self):
+        """It should prevent multiple active shopcarts per customer"""
+        first = ShopCart(customer_id=888)
+        first.create()
+
+        duplicate = ShopCart(customer_id=888)
+        with self.assertRaises(DataValidationError):
+            duplicate.create()
+
+    def test_read_existing_shopcart(self):
+        """It should read an existing shopcart with its items"""
+        shopcart = ShopCartFactory()
+        item = ItemFactory(product_id=321, quantity=2, price=Decimal("9.99"))
+        shopcart.items.append(item)
+        shopcart.create()
+
+        found = ShopCart.find(shopcart.shopcart_id)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.shopcart_id, shopcart.shopcart_id)
+        self.assertEqual(len(found.items), 1)
+        self.assertEqual(found.items[0].product_id, 321)
+        self.assertEqual(found.items[0].quantity, 2)
+
+    def test_read_nonexistent_shopcart(self):
+        """It should return None when the shopcart does not exist"""
+        self.assertIsNone(ShopCart.find(0))
+
+    def test_update_shopcart_items(self):
+        """It should update item quantities and refresh timestamps"""
+        shopcart = ShopCartFactory()
+        shopcart.items.append(ItemFactory(quantity=1))
+        shopcart.create()
+
+        previous_updated = shopcart.updated_at
+        shopcart.items[0].quantity = 3
+        shopcart.update()
+
+        refreshed = ShopCart.find(shopcart.shopcart_id)
+        self.assertEqual(refreshed.items[0].quantity, 3)
+        self.assertNotEqual(refreshed.updated_at, previous_updated)
+        self.assertGreaterEqual(refreshed.updated_at, previous_updated)
+
+    def test_delete_shopcart_cascades_items(self):
+        """It should delete a shopcart and cascade delete its items"""
+        shopcart = ShopCartFactory()
+        shopcart.items.extend([ItemFactory(), ItemFactory()])
+        shopcart.create()
+
+        cart_id = shopcart.shopcart_id
+        shopcart.delete()
+
+        self.assertIsNone(ShopCart.find(cart_id))
+        remaining = Item.query.filter_by(shopcart_id=cart_id).count()
+        self.assertEqual(remaining, 0)
+
+    def test_list_all_shopcarts(self):
+        """It should list all shopcarts with their items"""
+        customer_ids = [101, 102, 103]
+        for customer_id in customer_ids:
+            cart = ShopCart(customer_id=customer_id)
+            cart.items.append(ItemFactory())
+            cart.create()
+
+        found = ShopCart.all()
+        self.assertEqual(len(found), len(customer_ids))
+        self.assertTrue(all(cart.items for cart in found))
+
+    def test_item_quantity_geq_one(self):
+        """It should enforce quantity validations"""
+        with self.assertRaises(DataValidationError):
+            Item(product_id=1, quantity=0)
+
+        with self.assertRaises(DataValidationError):
+            Item(product_id=1, quantity=-1)

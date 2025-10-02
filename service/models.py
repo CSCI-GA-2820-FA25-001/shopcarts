@@ -1,11 +1,9 @@
-"""
-Models for YourResourceModel
-
-All of the models are stored in this module
-"""
+"""Database models for the ShopCart resource."""
 
 import logging
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import validates, relationship
 
 logger = logging.getLogger("flask.app")
 
@@ -14,31 +12,38 @@ db = SQLAlchemy()
 
 
 class DataValidationError(Exception):
-    """Used for an data validation errors when deserializing"""
+    """Used for any data validation errors"""
 
 
-class YourResourceModel(db.Model):
-    """
-    Class that represents a YourResourceModel
-    """
+class ShopCart(db.Model):
+    """Represents a customer's shopcart"""
+
+    __tablename__ = "shopcarts"
 
     ##################################################
     # Table Schema
     ##################################################
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(63))
+    shopcart_id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, nullable=False, unique=True, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
-    # Todo: Place the rest of your schema here...
+    items = relationship(
+        "Item",
+        back_populates="shopcart",
+        cascade="all, delete-orphan",
+        order_by="Item.item_id",
+    )
 
     def __repr__(self):
-        return f"<YourResourceModel {self.name} id=[{self.id}]>"
+        return f"<ShopCart id={self.shopcart_id} customer={self.customer_id}>"
 
     def create(self):
-        """
-        Creates a YourResourceModel to the database
-        """
-        logger.info("Creating %s", self.name)
-        self.id = None  # pylint: disable=invalid-name
+        """Persist the shopcart to the database"""
+        logger.info("Creating shopcart for customer_id=%s", self.customer_id)
+        self.shopcart_id = None
         try:
             db.session.add(self)
             db.session.commit()
@@ -48,10 +53,10 @@ class YourResourceModel(db.Model):
             raise DataValidationError(e) from e
 
     def update(self):
-        """
-        Updates a YourResourceModel to the database
-        """
-        logger.info("Saving %s", self.name)
+        """Save updates to this shopcart"""
+        logger.info("Updating shopcart id=%s", self.shopcart_id)
+        self.updated_at = datetime.utcnow()
+
         try:
             db.session.commit()
         except Exception as e:
@@ -60,8 +65,9 @@ class YourResourceModel(db.Model):
             raise DataValidationError(e) from e
 
     def delete(self):
-        """Removes a YourResourceModel from the data store"""
-        logger.info("Deleting %s", self.name)
+        """Delete this shopcart and cascade to its items"""
+        logger.info("Deleting shopcart id=%s", self.shopcart_id)
+
         try:
             db.session.delete(self)
             db.session.commit()
@@ -70,54 +76,52 @@ class YourResourceModel(db.Model):
             logger.error("Error deleting record: %s", self)
             raise DataValidationError(e) from e
 
-    def serialize(self):
-        """Serializes a YourResourceModel into a dictionary"""
-        return {"id": self.id, "name": self.name}
-
-    def deserialize(self, data):
-        """
-        Deserializes a YourResourceModel from a dictionary
-
-        Args:
-            data (dict): A dictionary containing the resource data
-        """
-        try:
-            self.name = data["name"]
-        except AttributeError as error:
-            raise DataValidationError("Invalid attribute: " + error.args[0]) from error
-        except KeyError as error:
-            raise DataValidationError(
-                "Invalid YourResourceModel: missing " + error.args[0]
-            ) from error
-        except TypeError as error:
-            raise DataValidationError(
-                "Invalid YourResourceModel: body of request contained bad or no data "
-                + str(error)
-            ) from error
-        return self
-
     ##################################################
     # CLASS METHODS
     ##################################################
 
     @classmethod
     def all(cls):
-        """Returns all of the YourResourceModels in the database"""
-        logger.info("Processing all YourResourceModels")
+        """Return all shopcarts"""
+        logger.info("Fetching all shopcarts")
         return cls.query.all()
 
     @classmethod
-    def find(cls, by_id):
-        """Finds a YourResourceModel by it's ID"""
-        logger.info("Processing lookup for id %s ...", by_id)
-        return cls.query.session.get(cls, by_id)
+    def find(cls, shopcart_id):
+        """Find a shopcart by shopcart id"""
+        logger.info("Looking up shopcart id=%s", shopcart_id)
+        return cls.query.session.get(cls, shopcart_id)
 
-    @classmethod
-    def find_by_name(cls, name):
-        """Returns all YourResourceModels with the given name
 
-        Args:
-            name (string): the name of the YourResourceModels you want to match
-        """
-        logger.info("Processing name query for %s ...", name)
-        return cls.query.filter(cls.name == name)
+class Item(db.Model):
+    """Represents an item in a shopcart"""
+
+    __tablename__ = "items"
+
+    ##################################################
+    # Table Schema
+    ##################################################
+    item_id = db.Column(db.Integer, primary_key=True)
+    shopcart_id = db.Column(
+        db.Integer,
+        db.ForeignKey("shopcarts.shopcart_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id = db.Column(db.Integer, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+
+    shopcart = relationship("ShopCart", back_populates="items")
+
+    def __repr__(self):
+        return (
+            f"<Item id={self.item_id} product={self.product_id} "
+            f"qty={self.quantity} cart={self.shopcart_id}>"
+        )
+
+    @validates("quantity")
+    def validate_quantity(self, key, quantity):  # pylint: disable=unused-argument
+        if quantity is None or int(quantity) < 1:
+            raise DataValidationError("Invalid quantity: must be at least 1")
+        return int(quantity)
