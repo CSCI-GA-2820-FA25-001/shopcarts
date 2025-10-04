@@ -22,7 +22,7 @@ import logging
 from decimal import Decimal
 from unittest import TestCase
 from wsgi import app
-from service.models import ShopCart, Item, DataValidationError, db
+from service.models import ShopCarts, Items, DataValidationError, db
 from .factories import ShopCartFactory, ItemFactory
 
 DATABASE_URI = os.getenv(
@@ -53,8 +53,8 @@ class TestShopCartModel(TestCase):
 
     def setUp(self):
         """This runs before each test"""
-        db.session.query(Item).delete()
-        db.session.query(ShopCart).delete()
+        db.session.query(Items).delete()
+        db.session.query(ShopCarts).delete()
         db.session.commit()
 
     def tearDown(self):
@@ -72,15 +72,15 @@ class TestShopCartModel(TestCase):
 
         self.assertIsNotNone(shopcart.shopcart_id)
         self.assertGreater(shopcart.shopcart_id, 0)
-        stored = ShopCart.find(shopcart.shopcart_id)
+        stored = ShopCarts.find(shopcart.shopcart_id)
         self.assertEqual(stored.customer_id, shopcart.customer_id)
 
     def test_prevent_duplicate_customer_shopcart(self):
         """It should prevent multiple active shopcarts per customer"""
-        first = ShopCart(customer_id=888)
+        first = ShopCarts(customer_id=888)
         first.create()
 
-        duplicate = ShopCart(customer_id=888)
+        duplicate = ShopCarts(customer_id=888)
         with self.assertRaises(DataValidationError):
             duplicate.create()
 
@@ -91,7 +91,7 @@ class TestShopCartModel(TestCase):
         shopcart.items.append(item)
         shopcart.create()
 
-        found = ShopCart.find(shopcart.shopcart_id)
+        found = ShopCarts.find(shopcart.shopcart_id)
         self.assertIsNotNone(found)
         self.assertEqual(found.shopcart_id, shopcart.shopcart_id)
         self.assertEqual(len(found.items), 1)
@@ -100,7 +100,7 @@ class TestShopCartModel(TestCase):
 
     def test_read_nonexistent_shopcart(self):
         """It should return None when the shopcart does not exist"""
-        self.assertIsNone(ShopCart.find(0))
+        self.assertIsNone(ShopCarts.find(0))
 
     def test_update_shopcart_items(self):
         """It should update item quantities and refresh timestamps"""
@@ -112,7 +112,7 @@ class TestShopCartModel(TestCase):
         shopcart.items[0].quantity = 3
         shopcart.update()
 
-        refreshed = ShopCart.find(shopcart.shopcart_id)
+        refreshed = ShopCarts.find(shopcart.shopcart_id)
         self.assertEqual(refreshed.items[0].quantity, 3)
         self.assertNotEqual(refreshed.updated_at, previous_updated)
         self.assertGreaterEqual(refreshed.updated_at, previous_updated)
@@ -126,26 +126,26 @@ class TestShopCartModel(TestCase):
         cart_id = shopcart.shopcart_id
         shopcart.delete()
 
-        self.assertIsNone(ShopCart.find(cart_id))
-        remaining = Item.query.filter_by(shopcart_id=cart_id).count()
+        self.assertIsNone(ShopCarts.find(cart_id))
+        remaining = Items.query.filter_by(shopcart_id=cart_id).count()
         self.assertEqual(remaining, 0)
 
     def test_list_all_shopcarts(self):
         """It should list all shopcarts with their items"""
         customer_ids = [101, 102, 103]
         for customer_id in customer_ids:
-            cart = ShopCart(customer_id=customer_id)
+            cart = ShopCarts(customer_id=customer_id)
             cart.items.append(ItemFactory())
             cart.create()
 
-        found = ShopCart.all()
+        found = ShopCarts.all()
         self.assertEqual(len(found), len(customer_ids))
         self.assertTrue(all(cart.items for cart in found))
 
     def test_item_quantity_geq_one(self):
         """It should enforce quantity validations"""
         with self.assertRaises(DataValidationError):
-            Item(product_id=1, quantity=0)
+            Items(product_id=1, quantity=0)
 
         with self.assertRaises(DataValidationError):
-            Item(product_id=1, quantity=-1)
+            Items(product_id=1, quantity=-1)

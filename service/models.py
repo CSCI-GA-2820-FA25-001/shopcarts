@@ -20,7 +20,7 @@ class DataValidationError(Exception):
     """Used for any data validation errors"""
 
 
-class ShopCart(db.Model):
+class ShopCarts(db.Model):
     """Represents a customer's shopcart"""
 
     __tablename__ = "shopcarts"
@@ -36,10 +36,10 @@ class ShopCart(db.Model):
     )
 
     items = relationship(
-        "Item",
+        "Items",
         back_populates="shopcart",
         cascade="all, delete-orphan",
-        order_by="Item.item_id",
+        order_by="Items.item_id",
     )
 
     def __repr__(self):
@@ -98,7 +98,7 @@ class ShopCart(db.Model):
         return cls.query.session.get(cls, shopcart_id)
 
 
-class Item(db.Model):
+class Items(db.Model):
     """Represents an item in a shopcart"""
 
     __tablename__ = "items"
@@ -117,7 +117,7 @@ class Item(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Numeric(10, 2), nullable=False)
 
-    shopcart = relationship("ShopCart", back_populates="items")
+    shopcart = relationship("ShopCarts", back_populates="items")
 
     def __repr__(self):
         return (
