@@ -33,8 +33,14 @@ from service.common import status  # HTTP Status Codes
 @app.route("/")
 def index():
     """Root URL response"""
+    app.logger.info("Request for Root URL")
     return (
-        "Reminder: return some useful information in json format about the service here",
+        jsonify(
+            name="Shopcarts Demo REST API Service",
+            version="1.0",
+            #TODO: Uncomment this code when list_shopcarts is implemented
+            # paths=url_for("list_shopcarts", _external=True),
+        ),
         status.HTTP_200_OK,
     )
 
