@@ -23,8 +23,8 @@ import os
 import logging
 from unittest import TestCase
 from wsgi import app
-from service.models import YourResourceModel, DataValidationError, db
-from .factories import YourResourceModelFactory
+from service.models import Shopcart, DataValidationError, db
+from .factories import ShopcartsFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -35,8 +35,8 @@ DATABASE_URI = os.getenv(
 #  YourResourceModel   M O D E L   T E S T   C A S E S
 ######################################################################
 # pylint: disable=too-many-public-methods
-class TestYourResourceModel(TestCase):
-    """Test Cases for YourResourceModel Model"""
+class TestShopcarts(TestCase):
+    """Test Cases for Shopcarts Model"""
 
     @classmethod
     def setUpClass(cls):
@@ -54,7 +54,7 @@ class TestYourResourceModel(TestCase):
 
     def setUp(self):
         """This runs before each test"""
-        db.session.query(YourResourceModel).delete()  # clean up the last tests
+        db.session.query(Shopcart).delete()  # clean up the last tests
         db.session.commit()
 
     def tearDown(self):
@@ -66,14 +66,15 @@ class TestYourResourceModel(TestCase):
     ######################################################################
 
     def test_example_replace_this(self):
-        """It should create a YourResourceModel"""
+        """It should create a Shopcarts"""
         # Todo: Remove this test case example
-        resource = YourResourceModelFactory()
+        resource = Shopcart()
+
         resource.create()
         self.assertIsNotNone(resource.id)
-        found = YourResourceModel.all()
+        found = Shopcart.all()
         self.assertEqual(len(found), 1)
-        data = YourResourceModel.find(resource.id)
+        data = Shopcart.find(resource.id)
         self.assertEqual(data.name, resource.name)
 
     # Todo: Add your test cases here...

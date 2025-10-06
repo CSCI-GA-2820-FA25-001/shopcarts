@@ -15,15 +15,14 @@
 ######################################################################
 
 """
-YourResourceModel Service
+Shopcart Service
 
 This service implements a REST API that allows you to Create, Read, Update
-and Delete YourResourceModel
+and Delete Shopcart
 """
-
 from flask import jsonify, request, url_for, abort
+from service.models import Shopcart
 from flask import current_app as app  # Import Flask application
-from service.models import YourResourceModel
 from service.common import status  # HTTP Status Codes
 
 
@@ -38,7 +37,7 @@ def index():
         jsonify(
             name="Shopcarts Demo REST API Service",
             version="1.0",
-            #TODO: Uncomment this code when list_shopcarts is implemented
+            # TODO: Uncomment this code when list_shopcarts is implemented
             # paths=url_for("list_shopcarts", _external=True),
         ),
         status.HTTP_200_OK,
