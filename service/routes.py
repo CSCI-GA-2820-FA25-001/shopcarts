@@ -70,6 +70,7 @@ def create_shopcarts():
     shopcart.create()
     app.logger.info("ShopCart with new id [%s] saved!", shopcart.shopcart_id)
 
+    # UNCOMMENT
     # Return the location of the new ShopCart
     # location_url = url_for(
     # "get_shopcarts", shopcart_id=shopcart.shopcart_id, _external=True
