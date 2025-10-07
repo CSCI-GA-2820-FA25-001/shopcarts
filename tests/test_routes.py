@@ -24,11 +24,13 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db, YourResourceModel
+from service.models import db, ShopCarts
+from .factories import ShopCartFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
+BASE_URL = "/shopcarts"
 
 
 ######################################################################
@@ -56,7 +58,7 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
-        db.session.query(YourResourceModel).delete()  # clean up the last tests
+        db.session.query(ShopCarts).delete()  # clean up the last tests
         db.session.commit()
 
     def tearDown(self):
@@ -72,6 +74,26 @@ class TestYourResourceService(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
-        self.assertEqual(data["name"], "Shopcarts Demo REST API Service")
+        self.assertEqual(data["name"], "ShopCarts Demo REST API Service")
 
     # Todo: Add your test cases here...
+    def test_create_shopcart(self):
+        """It should Create a new shopcart"""
+        test_shopcart = ShopCartFactory()
+        logging.debug("Test shopcart: %s", test_shopcart.serialize())
+        response = self.client.post(BASE_URL, json=test_shopcart.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check the data is correct
+        new_shopcart = response.get_json()
+        self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
+
+        # Check that the location header was correct
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_shopcart = response.get_json()
+        self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
