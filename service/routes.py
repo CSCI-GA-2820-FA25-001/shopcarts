@@ -36,9 +36,9 @@ def index():
     app.logger.info("Request for Root URL")
     return (
         jsonify(
-            name="Shopcarts Demo REST API Service",
+            name="ShopCarts Demo REST API Service",
             version="1.0",
-            #TODO: Uncomment this code when list_shopcarts is implemented
+            # TODO: Uncomment this code when list_shopcarts is implemented
             # paths=url_for("list_shopcarts", _external=True),
         ),
         status.HTTP_200_OK,
@@ -49,4 +49,38 @@ def index():
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
+
 # Todo: Place your REST API code here ...
+@app.route("/shopcarts", methods=["POST"])
+def create_shopcarts():
+    """
+    Create a ShopCart
+    This endpoint will create a ShopCart based the data in the body that is posted
+    """
+    app.logger.info("Request to Create a ShopCart...")
+    # check_content_type("application/json")
+
+    shopcart = ShopCarts()
+    # Get the data from the request and deserialize it
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+    shopcart.deserialize(data)
+
+    # Save the new ShopCart to the database
+    shopcart.create()
+    app.logger.info("ShopCart with new id [%s] saved!", shopcart.shopcart_id)
+
+    # UNCOMMENT once we have GET
+
+    # Return the location of the new ShopCart
+    # location_url = url_for(
+    # "get_shopcarts", shopcart_id=shopcart.shopcart_id, _external=True
+    # )
+    # adjust later
+    location_url = f"/shopcarts/{shopcart.shopcart_id}"
+
+    return (
+        jsonify(shopcart.serialize()),
+        status.HTTP_201_CREATED,
+        {"Location": location_url},
+    )

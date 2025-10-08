@@ -48,7 +48,7 @@ class ShopCarts(db.Model):
     def create(self):
         """Persist the shopcart to the database"""
         logger.info("Creating shopcart for customer_id=%s", self.customer_id)
-        self.shopcart_id = None
+        # self.shopcart_id = None
         try:
             db.session.add(self)
             db.session.commit()
@@ -80,6 +80,31 @@ class ShopCarts(db.Model):
             db.session.rollback()
             logger.error("Error deleting record: %s", self)
             raise DataValidationError(e) from e
+
+    def serialize(self) -> dict:
+        """Serializes a ShopCart into a dictionary"""
+        return {"shopcart_id": self.shopcart_id, "customer_id": self.customer_id}
+
+    def deserialize(self, data: dict):
+        """
+        Deserializes a ShopCart from a dictionary
+        Args:
+            data (dict): A dictionary containing the ShopCart data
+        """
+        try:
+            self.customer_id = data["customer_id"]
+        except AttributeError as error:
+            raise DataValidationError("Invalid attribute: " + error.args[0]) from error
+        except KeyError as error:
+            raise DataValidationError(
+                "Invalid shopcart: missing " + error.args[0]
+            ) from error
+        except TypeError as error:
+            raise DataValidationError(
+                "Invalid shopcart: body of request contained bad or no data "
+                + str(error)
+            ) from error
+        return self
 
     ##################################################
     # CLASS METHODS
