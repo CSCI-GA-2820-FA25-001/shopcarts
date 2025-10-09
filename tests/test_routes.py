@@ -92,10 +92,8 @@ class TestYourResourceService(TestCase):
         new_shopcart = response.get_json()
         self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
 
-        # UNCOMMENT once we have GET!
-
         # Check that the location header was correct
-        # response = self.client.get(location)
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # new_shopcart = response.get_json()
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_shopcart = response.get_json()
         self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
