@@ -127,3 +127,20 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         new_shopcart = response.get_json()
         self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
+
+    def test_get_shopcart(self):
+        """It should Get a single ShopCart"""
+        # get the id of a shopcart
+        test_shopcart = self._create_shopcarts(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_shopcart.shopcart_id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["shopcart_id"], test_shopcart.shopcart_id)
+
+    def test_get_shopcart_not_found(self):
+        """It should not Get a ShopCart thats not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        logging.debug("Response data = %s", data)
+        self.assertIn("was not found", data["message"])
