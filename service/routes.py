@@ -38,8 +38,7 @@ def index():
         jsonify(
             name="ShopCarts Demo REST API Service",
             version="1.0",
-            # TODO: Uncomment this code when list_shopcarts is implemented
-            # paths=url_for("list_shopcarts", _external=True),
+            paths=url_for("list_shopcarts", _external=True),
         ),
         status.HTTP_200_OK,
     )
@@ -51,6 +50,24 @@ def index():
 
 
 # Todo: Place your REST API code here ...
+
+
+######################################################################
+# LIST ALL SHOPCARTS
+######################################################################
+@app.route("/shopcarts", methods=["GET"])
+def list_shopcarts():
+    """Returns all of the Shopcarts"""
+    app.logger.info("Request for shopcart list")
+
+    shopcarts = []
+    # TODO: query for next hw
+    shopcarts = ShopCarts.all()
+    results = [shopcart.serialize() for shopcart in shopcarts]
+    app.logger.info("Returning %d shopcarts", len(results))
+    return jsonify(results), status.HTTP_200_OK
+
+
 @app.route("/shopcarts", methods=["POST"])
 def create_shopcarts():
     """

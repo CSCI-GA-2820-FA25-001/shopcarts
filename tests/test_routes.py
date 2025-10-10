@@ -77,6 +77,36 @@ class TestYourResourceService(TestCase):
         self.assertEqual(data["name"], "ShopCarts Demo REST API Service")
 
     # Todo: Add your test cases here...
+    ############################################################
+    # Utility function to bulk create shopcarts
+    ############################################################
+    def _create_shopcarts(self, count: int = 1) -> list:
+        """Factory method to create shopcarts in bulk"""
+        shopcarts = []
+        for _ in range(count):
+            test_shopcart = ShopCartFactory()
+            response = self.client.post(BASE_URL, json=test_shopcart.serialize())
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_201_CREATED,
+                "Could not create test shopcart",
+            )
+            new_shopcart = response.get_json()
+            test_shopcart.shopcart_id = new_shopcart["shopcart_id"]
+            shopcarts.append(test_shopcart)
+        return shopcarts
+
+    # ----------------------------------------------------------
+    # TEST LIST
+    # ----------------------------------------------------------
+    def test_get_shopcart_list(self):
+        """It should Get a list of Shopcarts"""
+        self._create_shopcarts(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
+
     def test_create_shopcart(self):
         """It should Create a new shopcart"""
         test_shopcart = ShopCartFactory()
