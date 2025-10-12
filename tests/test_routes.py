@@ -178,4 +178,4 @@ class TestYourResourceService(TestCase):
         # response = self.client.get(location)
         # self.assertEqual(response.status_code, status.HTTP_200_OK)
         # fetched_item = response.get_json()
-        # self.assertEqual(fetched_item["item_id"], new_item["item_id"]).
+        # self.assertEqual(fetched_item["item_id"], new_item["item_id"])
