@@ -24,8 +24,8 @@ import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
-from service.models import db, ShopCarts
-from .factories import ShopCartFactory
+from service.models import db, ShopCarts, Items
+from .factories import ShopCartFactory, ItemFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -160,3 +160,37 @@ class TestYourResourceService(TestCase):
         response = self.client.delete(f"{BASE_URL}/0")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
+    def test_create_shopcart_item(self):
+        """It should Create a new shopcart item"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        shopcart_id = test_shopcart.shopcart_id
+
+        # Create a test item using the factory
+        test_item = ItemFactory()
+        logging.debug("Test item: %s", test_item.serialize())
+
+        response = self.client.post(
+            f"{BASE_URL}/{shopcart_id}/items",
+            json=test_item.serialize(),
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check the data is correct
+        new_item = response.get_json()
+        self.assertEqual(new_item["product_id"], test_item.product_id)
+        self.assertEqual(new_item["quantity"], test_item.quantity)
+        self.assertAlmostEqual(
+            float(new_item["price"]), float(test_item.price), places=2
+        )
+        self.assertEqual(new_item["shopcart_id"], shopcart_id)
+
+        # Check that the location header was correct
+        # (commented out until get_item() is implemented)
+        # response = self.client.get(location)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # fetched_item = response.get_json()
+        # self.assertEqual(fetched_item["item_id"], new_item["item_id"]

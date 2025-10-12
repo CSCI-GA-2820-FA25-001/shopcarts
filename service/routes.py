@@ -21,9 +21,11 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete ShopCart
 """
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import ShopCarts
+from service.models import ShopCarts, Items
 from service.common import status  # HTTP Status Codes
 
 
@@ -157,4 +159,116 @@ def check_content_type(content_type) -> None:
     abort(
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         f"Content-Type must be {content_type}",
+    )
+
+
+@app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["PUT"])
+def update_shopcart_item(shopcart_id, item_id):
+    """Update the quantity for an item in a shopcart"""
+    app.logger.info(
+        "Request to update item [%s] in shopcart [%s]", item_id, shopcart_id
+    )
+    check_content_type("application/json")
+
+    shopcart = ShopCarts.find(shopcart_id)
+    if not shopcart:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Shopcart with id '{shopcart_id}' was not found.",
+        )
+
+    item = next((itm for itm in shopcart.items if itm.item_id == item_id), None)
+    if not item:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Item with id '{item_id}' was not found in shopcart '{shopcart_id}'.",
+        )
+
+    data = request.get_json()
+    if data is None:
+        abort(status.HTTP_400_BAD_REQUEST, "Request body must be valid JSON.")
+
+    if "quantity" not in data:
+        abort(status.HTTP_400_BAD_REQUEST, "Field 'quantity' is required.")
+
+    try:
+        new_quantity = int(data["quantity"])
+    except (TypeError, ValueError):
+        abort(status.HTTP_400_BAD_REQUEST, "Quantity must be an integer.")
+
+    if new_quantity < 1:
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid quantity: must be at least 1.",
+        )
+
+    # Determine the unit price from the request or infer from current price
+    if "unit_price" in data and data["unit_price"] is not None:
+        try:
+            unit_price = Decimal(str(data["unit_price"]))
+        except (InvalidOperation, ValueError) as error:
+            abort(
+                status.HTTP_400_BAD_REQUEST,
+                f"Invalid unit_price value: {error}",
+            )
+    else:
+        # Avoid division by zero; quantity validator already prevents zero
+        unit_price = item.price / item.quantity
+
+    if unit_price < 0:
+        abort(
+            status.HTTP_400_BAD_REQUEST,
+            "unit_price must not be negative.",
+        )
+
+    # Quantize to two decimal places using bankers rounding
+    new_price = (unit_price * Decimal(new_quantity)).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+
+    item.quantity = new_quantity
+    item.price = new_price
+    shopcart.update()
+
+    updated_item = {
+        "item_id": item.item_id,
+        "shopcart_id": item.shopcart_id,
+        "product_id": item.product_id,
+        "quantity": item.quantity,
+        "price": str(item.price),
+    }
+    app.logger.info(
+        "Item [%s] in shopcart [%s] updated to quantity=%s price=%s",
+        item_id,
+        shopcart_id,
+        new_quantity,
+        new_price,
+    )
+    return jsonify(updated_item), status.HTTP_200_OK
+@app.route("/shopcarts/<int:shopcart_id>/items", methods=["POST"])
+def create_shopcarts_item(shopcart_id):
+    """Create an Item inside a ShopCart"""
+    app.logger.info("Request to Create an Item inside a ShopCart...")
+    check_content_type("application/json")
+
+    item = Items()
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+    item.deserialize(data)
+    item.shopcart_id = shopcart_id
+    # Save the new ShopCart to the database
+    item.create()
+    app.logger.info("ShopCart Item with new id [%s] saved!", item.item_id)
+
+    # Temporary location URL (will replace with get_item later)
+    # location_url = url_for(
+    #     "get_item", shopcart_id=shopcart_id, item_id=item.item_id, _external=True
+    # )
+    location_url = f"/shopcarts/{shopcart_id}/items/{item.item_id}"
+
+    return (
+        jsonify(item.serialize()),
+        status.HTTP_201_CREATED,
+        {"Location": location_url},
     )
