@@ -124,8 +124,27 @@ def get_shopcarts(shopcart_id):
     return jsonify(shopcart.serialize()), status.HTTP_200_OK
 
 
+@app.route("/shopcarts/<int:shopcart_id>", methods=["DELETE"])
+def delete_shopcarts(shopcart_id):
+    """
+    Delete a ShopCart
+
+    This endpoint will delete a ShopCart based the id specified in the path
+    """
+    app.logger.info("Request to Delete a shopcart with id [%s]", shopcart_id)
+
+    # Delete the ShopCart if it exists
+    shopcart = ShopCarts.find(shopcart_id)
+    if shopcart:
+        app.logger.info("ShopCart with ID: %d found.", shopcart.shopcart_id)
+        shopcart.delete()
+
+    app.logger.info("ShopCart with ID: %d delete complete.", shopcart_id)
+    return {}, status.HTTP_204_NO_CONTENT
+
+
 def check_content_type(content_type) -> None:
-    """Checks that the media type is correct"""
+    """Checks that media type is correct"""
     if "Content-Type" not in request.headers:
         app.logger.error("No Content-Type specified.")
         abort(
