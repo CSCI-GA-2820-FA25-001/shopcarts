@@ -150,6 +150,51 @@ class Items(db.Model):
             f"qty={self.quantity} cart={self.shopcart_id}>"
         )
 
+    def create(self):
+        """Persist the shopcart to the database"""
+        logger.info("Creating shopcart item for shopcart_id=%s", self.shopcart_id)
+        # self.shopcart_id = None
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("Error creating record: %s", self)
+            raise DataValidationError(e) from e
+
+    def serialize(self) -> dict:
+        """Serializes a Item into a dictionary"""
+        return {
+            "item_id": self.item_id,
+            "shopcart_id": self.shopcart_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "price": self.price,
+        }
+
+    def deserialize(self, data: dict):
+        """
+        Deserializes a ShopCart from a dictionary
+        Args:
+            data (dict): A dictionary containing the ShopCart data
+        """
+        try:
+            self.product_id = int(data["product_id"])
+            self.quantity = int(data["quantity"])
+            self.price = float(data["price"])
+        except AttributeError as error:
+            raise DataValidationError("Invalid attribute: " + error.args[0]) from error
+        except KeyError as error:
+            raise DataValidationError(
+                "Invalid shopcart: missing " + error.args[0]
+            ) from error
+        except TypeError as error:
+            raise DataValidationError(
+                "Invalid shopcart: body of request contained bad or no data "
+                + str(error)
+            ) from error
+        return self
+
     @validates("quantity")
     def validate_quantity(self, key, quantity):  # pylint: disable=unused-argument
         if quantity is None or int(quantity) < 1:
