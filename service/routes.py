@@ -25,7 +25,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
-from service.models import ShopCarts
+from service.models import ShopCarts, Items
 from service.common import status  # HTTP Status Codes
 
 
@@ -227,3 +227,29 @@ def update_shopcart_item(shopcart_id, item_id):
         new_price,
     )
     return jsonify(updated_item), status.HTTP_200_OK
+@app.route("/shopcarts/<int:shopcart_id>/items", methods=["POST"])
+def create_shopcarts_item(shopcart_id):
+    """Create an Item inside a ShopCart"""
+    app.logger.info("Request to Create an Item inside a ShopCart...")
+    check_content_type("application/json")
+
+    item = Items()
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+    item.deserialize(data)
+    item.shopcart_id = shopcart_id
+    # Save the new ShopCart to the database
+    item.create()
+    app.logger.info("ShopCart Item with new id [%s] saved!", item.item_id)
+
+    # Temporary location URL (will replace with get_item later)
+    # location_url = url_for(
+    #     "get_item", shopcart_id=shopcart_id, item_id=item.item_id, _external=True
+    # )
+    location_url = f"/shopcarts/{shopcart_id}/items/{item.item_id}"
+
+    return (
+        jsonify(item.serialize()),
+        status.HTTP_201_CREATED,
+        {"Location": location_url},
+    )

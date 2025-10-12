@@ -127,3 +127,55 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         new_shopcart = response.get_json()
         self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
+
+    def test_get_shopcart(self):
+        """It should Get a single ShopCart"""
+        # get the id of a shopcart
+        test_shopcart = self._create_shopcarts(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_shopcart.shopcart_id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["shopcart_id"], test_shopcart.shopcart_id)
+
+    def test_get_shopcart_not_found(self):
+        """It should not Get a ShopCart thats not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        logging.debug("Response data = %s", data)
+        self.assertIn("was not found", data["message"])
+
+    def test_create_shopcart_item(self):
+        """It should Create a new shopcart item"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        shopcart_id = test_shopcart.shopcart_id
+
+        # Create a test item using the factory
+        test_item = ItemFactory()
+        logging.debug("Test item: %s", test_item.serialize())
+
+        response = self.client.post(
+            f"{BASE_URL}/{shopcart_id}/items",
+            json=test_item.serialize(),
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check the data is correct
+        new_item = response.get_json()
+        self.assertEqual(new_item["product_id"], test_item.product_id)
+        self.assertEqual(new_item["quantity"], test_item.quantity)
+        self.assertAlmostEqual(
+            float(new_item["price"]), float(test_item.price), places=2
+        )
+        self.assertEqual(new_item["shopcart_id"], shopcart_id)
+
+        # Check that the location header was correct
+        # (commented out until get_item() is implemented)
+        # response = self.client.get(location)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # fetched_item = response.get_json()
+        # self.assertEqual(fetched_item["item_id"], new_item["item_id"]
