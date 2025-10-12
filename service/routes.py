@@ -142,7 +142,7 @@ def delete_shopcarts(shopcart_id):
 
 
 def check_content_type(content_type) -> None:
-    """Checks that the media type is correct"""
+    """Checks that media type is correct"""
     if "Content-Type" not in request.headers:
         app.logger.error("No Content-Type specified.")
         abort(
