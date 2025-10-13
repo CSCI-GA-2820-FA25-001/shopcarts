@@ -242,6 +242,7 @@ class TestYourResourceService(TestCase):
         """It should return 404 when listing items for a missing shopcart"""
         response = self.client.get(f"{BASE_URL}/0/items")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_get_shopcart_item(self):
         """It should read an item from a shopcart"""
         test_shopcart = self._create_shopcarts(1)[0]
