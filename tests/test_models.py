@@ -21,6 +21,7 @@ import os
 import logging
 from decimal import Decimal
 from unittest import TestCase
+from unittest.mock import patch
 from wsgi import app
 from service.models import ShopCarts, Items, DataValidationError, db
 from .factories import ShopCartFactory, ItemFactory
@@ -149,3 +150,121 @@ class TestShopCartModel(TestCase):
 
         with self.assertRaises(DataValidationError):
             Items(product_id=1, quantity=-1)
+
+    def test_update_shopcart_rollback_on_failure(self):
+        """It should raise DataValidationError and rollback on failed update"""
+        shopcart = ShopCartFactory()
+        shopcart.create()
+
+        with patch.object(db.session, "commit", side_effect=Exception("commit failed")), patch.object(
+            db.session, "rollback"
+        ) as mock_rollback:
+            with self.assertRaises(DataValidationError) as context:
+                shopcart.update()
+
+        self.assertIn("commit failed", str(context.exception))
+        mock_rollback.assert_called_once()
+
+    def test_delete_shopcart_rollback_on_failure(self):
+        """It should raise DataValidationError and rollback on failed delete"""
+        shopcart = ShopCartFactory()
+        shopcart.create()
+
+        with patch.object(
+            db.session, "commit", side_effect=Exception("delete failed")
+        ), patch.object(db.session, "rollback") as mock_rollback:
+            with self.assertRaises(DataValidationError) as context:
+                shopcart.delete()
+
+        self.assertIn("delete failed", str(context.exception))
+        mock_rollback.assert_called_once()
+
+    def test_shopcart_deserialize_attribute_error(self):
+        """It should raise DataValidationError when deserialize hits AttributeError"""
+
+        class BadMapping(dict):
+            def __getitem__(self, key):  # pylint: disable=unused-argument
+                raise AttributeError("boom")
+
+        shopcart = ShopCarts()
+
+        with self.assertRaises(DataValidationError) as context:
+            shopcart.deserialize(BadMapping())
+
+        self.assertIn("Invalid attribute", str(context.exception))
+
+    def test_shopcart_deserialize_missing_key(self):
+        """It should raise DataValidationError when required key missing"""
+        shopcart = ShopCarts()
+
+        with self.assertRaises(DataValidationError) as context:
+            shopcart.deserialize({"wrong_key": 1})
+
+        self.assertIn("missing customer_id", str(context.exception))
+
+    def test_shopcart_deserialize_type_error(self):
+        """It should raise DataValidationError when deserialize gets bad type"""
+        shopcart = ShopCarts()
+
+        with self.assertRaises(DataValidationError) as context:
+            shopcart.deserialize(None)
+
+        self.assertIn("body of request contained bad or no data", str(context.exception))
+
+    def test_item_repr_includes_fields(self):
+        """It should include identifying fields in the repr"""
+        item = Items(item_id=5, shopcart_id=7, product_id=9, quantity=3, price=Decimal("2.50"))
+
+        representation = repr(item)
+
+        self.assertIn("id=5", representation)
+        self.assertIn("product=9", representation)
+        self.assertIn("qty=3", representation)
+        self.assertIn("cart=7", representation)
+
+    def test_item_create_rollback_on_failure(self):
+        """It should raise DataValidationError and rollback on failed item create"""
+        shopcart = ShopCartFactory()
+        shopcart.create()
+        item = Items(shopcart_id=shopcart.shopcart_id, product_id=1, quantity=1, price=Decimal("1.00"))
+
+        with patch.object(db.session, "commit", side_effect=Exception("create failed")), patch.object(
+            db.session, "rollback"
+        ) as mock_rollback:
+            with self.assertRaises(DataValidationError) as context:
+                item.create()
+
+        self.assertIn("create failed", str(context.exception))
+        mock_rollback.assert_called_once()
+
+    def test_item_deserialize_attribute_error(self):
+        """It should raise DataValidationError when item deserialize hits AttributeError"""
+
+        class BadMapping(dict):
+            def __getitem__(self, key):  # pylint: disable=unused-argument
+                raise AttributeError("zap")
+
+        item = Items()
+
+        with self.assertRaises(DataValidationError) as context:
+            item.deserialize(BadMapping())
+
+        self.assertIn("Invalid attribute", str(context.exception))
+
+    def test_item_deserialize_missing_key(self):
+        """It should raise DataValidationError when item payload misses keys"""
+        item = Items()
+
+        with self.assertRaises(DataValidationError) as context:
+            item.deserialize({"product_id": 1})
+
+        self.assertIn("missing quantity", str(context.exception))
+
+    def test_item_deserialize_type_error(self):
+        """It should raise DataValidationError when item deserialize gets bad type"""
+        item = Items()
+
+        with self.assertRaises(DataValidationError) as context:
+            item.deserialize(None)
+
+        self.assertIn("body of request contained bad or no data", str(context.exception))
