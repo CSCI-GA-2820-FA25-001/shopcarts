@@ -160,6 +160,7 @@ class TestYourResourceService(TestCase):
         response = self.client.delete(f"{BASE_URL}/0")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
+
     def test_create_shopcart_item(self):
         """It should Create a new shopcart item"""
         test_shopcart = self._create_shopcarts(1)[0]
@@ -194,3 +195,35 @@ class TestYourResourceService(TestCase):
         # self.assertEqual(response.status_code, status.HTTP_200_OK)
         # fetched_item = response.get_json()
         # self.assertEqual(fetched_item["item_id"], new_item["item_id"]
+
+    def test_get_shopcart_item(self):
+        """It should read an item from a shopcart"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        test_item = ItemFactory()
+        create_resp = self.client.post(
+            f"{BASE_URL}/{test_shopcart.shopcart_id}/items",
+            json=test_item.serialize(),
+        )
+        self.assertEqual(create_resp.status_code, status.HTTP_201_CREATED)
+        created_item = create_resp.get_json()
+
+        response = self.client.get(
+            f"{BASE_URL}/{test_shopcart.shopcart_id}/items/{created_item['item_id']}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["item_id"], created_item["item_id"])
+        self.assertEqual(data["shopcart_id"], test_shopcart.shopcart_id)
+        self.assertEqual(data["product_id"], created_item["product_id"])
+        self.assertEqual(data["quantity"], created_item["quantity"])
+        self.assertAlmostEqual(
+            float(data["price"]), float(created_item["price"]), places=2
+        )
+
+    def test_get_shopcart_item_not_found(self):
+        """It should return 404 when the item is missing from the shopcart"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_shopcart.shopcart_id}/items/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("was not found", data["message"])
