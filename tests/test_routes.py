@@ -190,12 +190,10 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(new_item["shopcart_id"], shopcart_id)
 
-        # Check that the location header was correct
-        # (commented out until get_item() is implemented)
-        # response = self.client.get(location)
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # fetched_item = response.get_json()
-        # self.assertEqual(fetched_item["item_id"], new_item["item_id"]
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        fetched_item = response.get_json()
+        self.assertEqual(fetched_item["item_id"], new_item["item_id"])
 
     def test_list_shopcart_items(self):
         """It should list all items in a shopcart"""
