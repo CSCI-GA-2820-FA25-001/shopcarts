@@ -291,11 +291,12 @@ def create_shopcarts_item(shopcart_id):
     item.create()
     app.logger.info("ShopCart Item with new id [%s] saved!", item.item_id)
 
-    # Temporary location URL (will replace with get_item later)
-    # location_url = url_for(
-    #     "get_item", shopcart_id=shopcart_id, item_id=item.item_id, _external=True
-    # )
-    location_url = f"/shopcarts/{shopcart_id}/items/{item.item_id}"
+    location_url = url_for(
+        "get_shopcart_item",
+        shopcart_id=shopcart_id,
+        item_id=item.item_id,
+        _external=True,
+    )
 
     return (
         jsonify(item.serialize()),
