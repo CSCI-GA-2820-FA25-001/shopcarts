@@ -276,6 +276,34 @@ def update_shopcart_item(shopcart_id, item_id):
     return jsonify(updated_item), status.HTTP_200_OK
 
 
+@app.route("/shopcarts/<int:shopcart_id>/items", methods=["GET"])
+def list_shopcart_items(shopcart_id):
+    """List all items in a shopcart"""
+    app.logger.info("Request to list items for shopcart with id [%s]", shopcart_id)
+
+    shopcart = ShopCarts.find(shopcart_id)
+    if not shopcart:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Shopcart with id '{shopcart_id}' was not found.",
+        )
+
+    items = [item.serialize() for item in shopcart.items]
+
+    response_items = []
+    for item in items:
+        serialized_item = dict(item)
+        serialized_item["price"] = str(serialized_item["price"])
+        response_items.append(serialized_item)
+
+    app.logger.info(
+        "Returning %d items for shopcart id [%s]",
+        len(response_items),
+        shopcart_id,
+    )
+    return jsonify(response_items), status.HTTP_200_OK
+
+
 @app.route("/shopcarts/<int:shopcart_id>/items", methods=["POST"])
 def create_shopcarts_item(shopcart_id):
     """Create an Item inside a ShopCart"""

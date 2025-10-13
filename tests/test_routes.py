@@ -58,6 +58,7 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
+        db.session.query(Items).delete()
         db.session.query(ShopCarts).delete()  # clean up the last tests
         db.session.commit()
 
@@ -196,6 +197,53 @@ class TestYourResourceService(TestCase):
         # fetched_item = response.get_json()
         # self.assertEqual(fetched_item["item_id"], new_item["item_id"]
 
+    def test_list_shopcart_items(self):
+        """It should list all items in a shopcart"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        shopcart_id = test_shopcart.shopcart_id
+
+        created_items = []
+        for _ in range(3):
+            test_item = ItemFactory()
+            response = self.client.post(
+                f"{BASE_URL}/{shopcart_id}/items",
+                json=test_item.serialize(),
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            created_items.append(response.get_json())
+
+        response = self.client.get(f"{BASE_URL}/{shopcart_id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), len(created_items))
+        created_ids = sorted(item["item_id"] for item in created_items)
+        returned_ids = sorted(item["item_id"] for item in data)
+        self.assertEqual(returned_ids, created_ids)
+        created_lookup = {item["item_id"]: item for item in created_items}
+        for item in data:
+            self.assertEqual(item["shopcart_id"], shopcart_id)
+            self.assertIn(item["item_id"], created_lookup)
+            expected = created_lookup[item["item_id"]]
+            self.assertEqual(item["product_id"], expected["product_id"])
+            self.assertEqual(item["quantity"], expected["quantity"])
+            self.assertAlmostEqual(
+                float(item["price"]),
+                float(expected["price"]),
+                places=2,
+            )
+
+    def test_list_shopcart_items_empty(self):
+        """It should return an empty list when a shopcart has no items"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_shopcart.shopcart_id}/items")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data, [])
+
+    def test_list_shopcart_items_not_found(self):
+        """It should return 404 when listing items for a missing shopcart"""
+        response = self.client.get(f"{BASE_URL}/0/items")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     def test_get_shopcart_item(self):
         """It should read an item from a shopcart"""
         test_shopcart = self._create_shopcarts(1)[0]
