@@ -162,6 +162,34 @@ def check_content_type(content_type) -> None:
     )
 
 
+@app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["GET"])
+def get_shopcart_item(shopcart_id, item_id):
+    """Retrieve the details for an item in a shopcart"""
+    app.logger.info(
+        "Request to retrieve item [%s] from shopcart [%s]", item_id, shopcart_id
+    )
+
+    shopcart = ShopCarts.find(shopcart_id)
+    if not shopcart:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Shopcart with id '{shopcart_id}' was not found.",
+        )
+
+    # Find first item with item_id. None if not exists.
+    item = next((itm for itm in shopcart.items if itm.item_id == item_id), None)
+    if not item:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Item with id '{item_id}' was not found in shopcart '{shopcart_id}'.",
+        )
+
+    result = item.serialize()
+    result["price"] = str(result["price"])
+    app.logger.info("Returning item [%s] from shopcart [%s]", item_id, shopcart_id)
+    return jsonify(result), status.HTTP_200_OK
+
+
 @app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["PUT"])
 def update_shopcart_item(shopcart_id, item_id):
     """Update the quantity for an item in a shopcart"""
@@ -246,6 +274,8 @@ def update_shopcart_item(shopcart_id, item_id):
         new_price,
     )
     return jsonify(updated_item), status.HTTP_200_OK
+
+
 @app.route("/shopcarts/<int:shopcart_id>/items", methods=["POST"])
 def create_shopcarts_item(shopcart_id):
     """Create an Item inside a ShopCart"""
