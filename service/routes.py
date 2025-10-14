@@ -331,3 +331,47 @@ def create_shopcarts_item(shopcart_id):
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
+
+
+@app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["DELETE"])
+def delete_shopcart_item(shopcart_id, item_id):
+    """
+    Delete an Item from a ShopCart
+
+    This endpoint will delete an Item based on the shopcart_id and item_id
+    specified in the path.
+    """
+    app.logger.info(
+        "Request to delete item [%s] from shopcart [%s]", item_id, shopcart_id
+    )
+
+    # Verify the shopcart exists
+    shopcart = ShopCarts.find(shopcart_id)
+    if not shopcart:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Shopcart with id '{shopcart_id}' was not found.",
+        )
+
+    # Find the item within that shopcart
+    item = next((itm for itm in shopcart.items if itm.item_id == item_id), None)
+    if item:
+        app.logger.info(
+            "Item [%s] found in shopcart [%s]. Proceeding with delete.",
+            item_id,
+            shopcart_id,
+        )
+        item.delete()
+        app.logger.info(
+            "Item [%s] successfully deleted from shopcart [%s].",
+            item_id,
+            shopcart_id,
+        )
+    else:
+        app.logger.warning(
+            "Item [%s] not found in shopcart [%s]. Nothing to delete.",
+            item_id,
+            shopcart_id,
+        )
+
+    return {}, status.HTTP_204_NO_CONTENT
