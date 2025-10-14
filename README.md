@@ -42,6 +42,14 @@ To ensure everything is working:
 make test
 ```
 
+### 4. Running the Service
+```bash
+  make run
+  # or
+  flask run -h 0.0.0.0 -p 8080
+  # or
+  honcho start
+```
 ## API Details
 
 ### <u> Root Endpoint </u>
@@ -56,7 +64,7 @@ Response:
   "paths": "http://localhost:8080/shopcarts"
 }
 ```
-### <u>ShopCarts Endpoints</u>
+### <u>ShopCarts Endpoints and Expected Responses</u>
 ```http
 POST   /shopcarts
 GET    /shopcarts
@@ -110,12 +118,34 @@ DELETE /shopcarts/<shopcart_id>
   "shopcart_id": 855
   }
   ```
-  - **Delete a Shopcart** 
+- **Delete a Shopcart** 
   ```http
     DELETE /shopcarts/<shopcart_id>
     ```
+- **Update a Shopcart**
+  ```http
+  PUT /shopcarts/<shopcart_id>
+  Content-Type: application/json
+  ```
+  Request Body:
+  ```json
+  {
+  "shopcart_id": 855,
+  "customer_id": 124
+  }
+  ```
 
-### <u>Items Endpoints</u>
+  Response (assuming input 855)
+  ```json
+  {
+  "shopcart_id": 855,
+  "customer_id": 124
+  }
+  ```
+
+
+
+### <u>Items Endpoints and Expected Responses</u>
 ```http
 POST   /shopcarts/<shopcart_id>/items
 GET    /shopcarts/<shopcart_id>/items
@@ -184,6 +214,10 @@ PUT    /shopcarts/<shopcart_id>/items/<item_id>
     "quantity": 2,
     "price": "19.99"
   }
+  ```
+- **Delete an Item in a Shopcart**
+    ```http
+  DELETE /shopcarts/<shopcart_id>/items/<item_id>
   ```
 
 - **Update an Item in a Shopcart**
