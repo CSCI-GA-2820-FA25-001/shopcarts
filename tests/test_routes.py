@@ -145,6 +145,25 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         logging.debug("Response data = %s", data)
         self.assertIn("was not found", data["message"])
+    
+    # ----------------------------------------------------------
+    # TEST UPDATE
+    # ----------------------------------------------------------
+    def test_update_shopcart(self):
+        """It should Update an existing Shopcart"""
+        # create a shopcart to update
+        test_shopcart = ShopCartFactory()
+        response = self.client.post(BASE_URL, json=test_shopcart.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # update the shopcart
+        new_shopcart = response.get_json()
+        logging.debug(new_shopcart)
+        new_shopcart["customer_id"] = test_shopcart.customer_id + 1 
+        response = self.client.put(f"{BASE_URL}/{new_shopcart['shopcart_id']}", json=new_shopcart)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_shopcart = response.get_json()
+        self.assertEqual(updated_shopcart["customer_id"], test_shopcart.customer_id + 1)
 
     def test_delete_shopcart(self):
         """It should Delete a shopcart"""
