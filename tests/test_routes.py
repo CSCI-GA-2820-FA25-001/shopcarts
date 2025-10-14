@@ -307,3 +307,58 @@ class TestYourResourceService(TestCase):
         response = self.client.delete(f"{BASE_URL}/{test_shopcart.shopcart_id}/items/0")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
+    def test_update_shopcart_item(self):
+        """It should Update an existing ShopCart Item"""
+        # create a shopcart to hold the item
+        test_shopcart = self._create_shopcarts(1)[0]
+
+        # create an item to update (via factory, like the Pet template)
+        test_item = ItemFactory(quantity=2, price=10.00)  # unit price = 5.00
+        response = self.client.post(
+            f"{BASE_URL}/{test_shopcart.shopcart_id}/items",
+            json=test_item.serialize(),
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # update the item
+        new_item = response.get_json()
+        logging.debug(new_item)
+
+        response = self.client.put(
+            f"{BASE_URL}/{test_shopcart.shopcart_id}/items/{new_item['item_id']}",
+            json={
+                "quantity": new_item["quantity"],
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_item = response.get_json()
+        self.assertEqual(updated_item["item_id"], new_item["item_id"])
+        self.assertEqual(updated_item["shopcart_id"], test_shopcart.shopcart_id)
+
+
+class TestSadPaths(TestCase):
+    """Test REST Exception Handling"""
+
+    def setUp(self):
+        """Runs before each test"""
+        self.client = app.test_client()
+
+    def test_method_not_allowed(self):
+        """It should not allow update without a shopcart id"""
+        response = self.client.put(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_create_shopcart_no_data(self):
+        """It should not Create a ShopCart with missing data"""
+        response = self.client.post(BASE_URL, json={})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_shopcart_no_content_type(self):
+        """It should not Create a ShopCart with no content type"""
+        response = self.client.post(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_shopcart_wrong_content_type(self):
+        """It should not Create a ShopCart with the wrong content type"""
+        response = self.client.post(BASE_URL, data="hello", content_type="text/html")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
