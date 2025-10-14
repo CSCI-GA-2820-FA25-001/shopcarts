@@ -21,8 +21,6 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete ShopCart
 """
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
 from service.models import ShopCarts, Items
@@ -52,8 +50,6 @@ def index():
 
 
 # Todo: Place your REST API code here ...
-
-
 ######################################################################
 # LIST ALL SHOPCARTS
 ######################################################################
@@ -68,6 +64,7 @@ def list_shopcarts():
     results = [shopcart.serialize() for shopcart in shopcarts]
     app.logger.info("Returning %d shopcarts", len(results))
     return jsonify(results), status.HTTP_200_OK
+
 
 ######################################################################
 # CREATE A SHOPCART
@@ -103,6 +100,7 @@ def create_shopcarts():
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
+
 
 ######################################################################
 # READ A SHOPCART
@@ -144,7 +142,10 @@ def update_shopcarts(shopcart_id):
     # Attempt to find the Shopcart and abort if not found
     shopcart = ShopCarts.find(shopcart_id)
     if not shopcart:
-        abort(status.HTTP_404_NOT_FOUND, f"Shopcart with id '{shopcart_id}' was not found.")
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Shopcart with id '{shopcart_id}' was not found.",
+        )
 
     # Update the Shopcart with the new data
     data = request.get_json()
@@ -156,6 +157,7 @@ def update_shopcarts(shopcart_id):
 
     app.logger.info("Shopcart with ID: %d updated.", shopcart.shopcart_id)
     return jsonify(shopcart.serialize()), status.HTTP_200_OK
+
 
 ######################################################################
 # DELETE A SHOPCART
@@ -197,6 +199,7 @@ def check_content_type(content_type) -> None:
         f"Content-Type must be {content_type}",
     )
 
+
 ######################################################################
 # READ AN ITEM
 ######################################################################
@@ -227,91 +230,6 @@ def get_shopcart_item(shopcart_id, item_id):
     app.logger.info("Returning item [%s] from shopcart [%s]", item_id, shopcart_id)
     return jsonify(result), status.HTTP_200_OK
 
-
-# @app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["PUT"])
-# def update_shopcart_item(shopcart_id, item_id):
-#     """Update the quantity for an item in a shopcart"""
-#     app.logger.info(
-#         "Request to update item [%s] in shopcart [%s]", item_id, shopcart_id
-#     )
-#     check_content_type("application/json")
-
-#     shopcart = ShopCarts.find(shopcart_id)
-#     if not shopcart:
-#         abort(
-#             status.HTTP_404_NOT_FOUND,
-#             f"Shopcart with id '{shopcart_id}' was not found.",
-#         )
-
-#     item = next((itm for itm in shopcart.items if itm.item_id == item_id), None)
-#     if not item:
-#         abort(
-#             status.HTTP_404_NOT_FOUND,
-#             f"Item with id '{item_id}' was not found in shopcart '{shopcart_id}'.",
-#         )
-
-#     data = request.get_json()
-#     if data is None:
-#         abort(status.HTTP_400_BAD_REQUEST, "Request body must be valid JSON.")
-
-#     if "quantity" not in data:
-#         abort(status.HTTP_400_BAD_REQUEST, "Field 'quantity' is required.")
-
-#     try:
-#         new_quantity = int(data["quantity"])
-#     except (TypeError, ValueError):
-#         abort(status.HTTP_400_BAD_REQUEST, "Quantity must be an integer.")
-
-#     if new_quantity < 1:
-#         abort(
-#             status.HTTP_400_BAD_REQUEST,
-#             "Invalid quantity: must be at least 1.",
-#         )
-
-#     # Determine the unit price from the request or infer from current price
-#     if "unit_price" in data and data["unit_price"] is not None:
-#         try:
-#             unit_price = Decimal(str(data["unit_price"]))
-#         except (InvalidOperation, ValueError) as error:
-#             abort(
-#                 status.HTTP_400_BAD_REQUEST,
-#                 f"Invalid unit_price value: {error}",
-#             )
-#     else:
-#         # Avoid division by zero; quantity validator already prevents zero
-#         unit_price = item.price / item.quantity
-
-#     if unit_price < 0:
-#         abort(
-#             status.HTTP_400_BAD_REQUEST,
-#             "unit_price must not be negative.",
-#         )
-
-#     # Quantize to two decimal places using bankers rounding
-#     new_price = (unit_price * Decimal(new_quantity)).quantize(
-#         Decimal("0.01"),
-#         rounding=ROUND_HALF_UP,
-#     )
-
-#     item.quantity = new_quantity
-#     item.price = new_price
-#     shopcart.update()
-
-#     updated_item = {
-#         "item_id": item.item_id,
-#         "shopcart_id": item.shopcart_id,
-#         "product_id": item.product_id,
-#         "quantity": item.quantity,
-#         "price": str(item.price),
-#     }
-#     app.logger.info(
-#         "Item [%s] in shopcart [%s] updated to quantity=%s price=%s",
-#         item_id,
-#         shopcart_id,
-#         new_quantity,
-#         new_price,
-#     )
-#     return jsonify(updated_item), status.HTTP_200_OK
 
 ######################################################################
 # UPDATE AN EXISTING ITEM
@@ -354,34 +272,6 @@ def update_shopcart_items(shopcart_id, item_id):
     return jsonify(item.serialize()), status.HTTP_200_OK
 
 
-# @app.route("/shopcarts/<int:shopcart_id>/items", methods=["GET"])
-# def list_shopcart_items(shopcart_id):
-#     """List all items in a shopcart"""
-#     app.logger.info("Request to list items for shopcart with id [%s]", shopcart_id)
-
-#     shopcart = ShopCarts.find(shopcart_id)
-#     if not shopcart:
-#         abort(
-#             status.HTTP_404_NOT_FOUND,
-#             f"Shopcart with id '{shopcart_id}' was not found.",
-#         )
-
-#     items = [item.serialize() for item in shopcart.items]
-
-#     response_items = []
-#     for item in items:
-#         serialized_item = dict(item)
-#         serialized_item["price"] = str(serialized_item["price"])
-#         response_items.append(serialized_item)
-
-#     app.logger.info(
-#         "Returning %d items for shopcart id [%s]",
-#         len(response_items),
-#         shopcart_id,
-#     )
-#     return jsonify(response_items), status.HTTP_200_OK
-
-
 ######################################################################
 # LIST AN ITEM
 ######################################################################
@@ -392,15 +282,17 @@ def list_shopcart_items(shopcart_id):
 
     shopcart = ShopCarts.find(shopcart_id)
     if not shopcart:
-        abort(status.HTTP_404_NOT_FOUND,
-              f"Shopcart with id '{shopcart_id}' was not found.")
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Shopcart with id '{shopcart_id}' was not found.",
+        )
 
     # Let the model handle serialization
     results = [item.serialize() for item in shopcart.items]
 
-    app.logger.info("Returning %d items for shopcart [%s]",
-                    len(results), shopcart_id)
+    app.logger.info("Returning %d items for shopcart [%s]", len(results), shopcart_id)
     return jsonify(results), status.HTTP_200_OK
+
 
 ######################################################################
 # CREATE AN ITEM
@@ -432,6 +324,7 @@ def create_shopcarts_item(shopcart_id):
         status.HTTP_201_CREATED,
         {"Location": location_url},
     )
+
 
 ######################################################################
 # DELETE AN ITEM
