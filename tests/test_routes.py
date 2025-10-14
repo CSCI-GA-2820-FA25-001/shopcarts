@@ -275,6 +275,38 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertIn("was not found", data["message"])
 
+    def test_delete_shopcart_item(self):
+        """It should Delete a Shopcart Item"""
+        # create a shopcart and add an item
+        test_shopcart = self._create_shopcarts(1)[0]
+        shopcart_id = test_shopcart.shopcart_id
+        test_item = ItemFactory()
+        create_resp = self.client.post(
+            f"{BASE_URL}/{shopcart_id}/items",
+            json=test_item.serialize(),
+        )
+        self.assertEqual(create_resp.status_code, status.HTTP_201_CREATED)
+        created_item = create_resp.get_json()
+
+        # delete the item
+        response = self.client.delete(
+            f"{BASE_URL}/{shopcart_id}/items/{created_item['item_id']}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+        # make sure it was deleted
+        response = self.client.get(
+            f"{BASE_URL}/{shopcart_id}/items/{created_item['item_id']}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_non_existing_shopcart_item(self):
+        """It should Delete a Shopcart Item even if it doesn't exist"""
+        test_shopcart = self._create_shopcarts(1)[0]
+        response = self.client.delete(f"{BASE_URL}/{test_shopcart.shopcart_id}/items/0")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
     def test_update_shopcart_item(self):
         """It should Update an existing ShopCart Item"""
         # create a shopcart to hold the item
