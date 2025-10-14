@@ -175,6 +175,16 @@ class Items(db.Model):
             logger.error("Error deleting item: %s", self)
             raise DataValidationError(e) from e
 
+    def update(self):
+        """Save updates to this item"""
+        logger.info("Updating item id=%s", self.item_id)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("Error updating record: %s", self)
+            raise DataValidationError(e) from e
+
     def serialize(self) -> dict:
         """Serializes a Item into a dictionary"""
         return {

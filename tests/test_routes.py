@@ -326,33 +326,60 @@ class TestYourResourceService(TestCase):
         response = self.client.delete(f"{BASE_URL}/{test_shopcart.shopcart_id}/items/0")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
-    def test_update_shopcart_item(self):
-        """It should Update an existing ShopCart Item"""
+
+    # def test_update_shopcart_item(self):
+    #     """It should Update an existing ShopCart Item"""
+    #     # create a shopcart to hold the item
+    #     test_shopcart = self._create_shopcarts(1)[0]
+
+    #     # create an item to update (via factory, like the Pet template)
+    #     test_item = ItemFactory(quantity=2, price=10.00)  # unit price = 5.00
+    #     response = self.client.post(
+    #         f"{BASE_URL}/{test_shopcart.shopcart_id}/items",
+    #         json=test_item.serialize(),
+    #     )
+    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    #     # update the item
+    #     new_item = response.get_json()
+    #     logging.debug(new_item)
+
+    #     response = self.client.put(
+    #         f"{BASE_URL}/{test_shopcart.shopcart_id}/items/{new_item['item_id']}",
+    #         json={
+    #             "quantity": new_item["quantity"],
+    #         },
+    #     )
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     updated_item = response.get_json()
+    #     self.assertEqual(updated_item["item_id"], new_item["item_id"])
+    #     self.assertEqual(updated_item["shopcart_id"], test_shopcart.shopcart_id)
+
+    def test_update_item(self):
+        """It should Update an existing Item"""
         # create a shopcart to hold the item
         test_shopcart = self._create_shopcarts(1)[0]
+        shopcart_id = test_shopcart.shopcart_id
 
-        # create an item to update (via factory, like the Pet template)
-        test_item = ItemFactory(quantity=2, price=10.00)  # unit price = 5.00
+        # create a new item
+        test_item = ItemFactory()
         response = self.client.post(
-            f"{BASE_URL}/{test_shopcart.shopcart_id}/items",
+            f"{BASE_URL}/{shopcart_id}/items",
             json=test_item.serialize(),
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # update the item
         new_item = response.get_json()
         logging.debug(new_item)
-
+        new_item["quantity"] = new_item["quantity"] + 1
         response = self.client.put(
-            f"{BASE_URL}/{test_shopcart.shopcart_id}/items/{new_item['item_id']}",
-            json={
-                "quantity": new_item["quantity"],
-            },
+            f"{BASE_URL}/{shopcart_id}/items/{new_item['item_id']}",
+            json=new_item,  
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
         updated_item = response.get_json()
-        self.assertEqual(updated_item["item_id"], new_item["item_id"])
-        self.assertEqual(updated_item["shopcart_id"], test_shopcart.shopcart_id)
+        self.assertEqual(updated_item["quantity"], new_item["quantity"])
 
 
 class TestSadPaths(TestCase):
