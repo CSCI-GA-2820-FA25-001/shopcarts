@@ -20,13 +20,14 @@ TestYourResourceModel API Service Test Suite
 
 # pylint: disable=duplicate-code
 import os
+from decimal import Decimal
 import logging
 from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, ShopCarts, Items
 from .factories import ShopCartFactory, ItemFactory
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
