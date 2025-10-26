@@ -22,7 +22,6 @@ and Delete ShopCart
 """
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
 from service.models import ShopCarts, Items
