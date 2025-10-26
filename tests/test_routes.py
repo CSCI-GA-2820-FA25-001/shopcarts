@@ -26,6 +26,7 @@ from wsgi import app
 from service.common import status
 from service.models import db, ShopCarts, Items
 from .factories import ShopCartFactory, ItemFactory
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
@@ -273,3 +274,172 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         data = response.get_json()
         self.assertIn("was not found", data["message"])
+        # inside your existing REST API test class that has self.client and BASE_URL
+
+    def test_update_item_missing_quantity(self):
+        """400 when quantity is missing"""
+        cart = self._create_shopcarts(1)[0]
+        item = ItemFactory(quantity=2, price=Decimal("4.00"))
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        r = self.client.put(f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}", json={})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_item_bad_type_and_lt_one(self):
+        """400 when quantity bad type or < 1"""
+        cart = self._create_shopcarts(1)[0]
+        item = ItemFactory(quantity=2, price=Decimal("4.00"))
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}", json={"quantity": "two"}
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}", json={"quantity": 0}
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_item_invalid_and_negative_unit_price(self):
+        """400 for invalid/negative unit_price"""
+        cart = self._create_shopcarts(1)[0]
+        item = ItemFactory(quantity=2, price=Decimal("4.00"))
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}",
+            json={"quantity": 3, "unit_price": "abc"},
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}",
+            json={"quantity": 3, "unit_price": -1},
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_item_success_with_and_without_unit_price(self):
+        """200 with inferred unit price and with explicit unit price (round half up)"""
+        cart = self._create_shopcarts(1)[0]
+
+        # Start with qty=3, price=9.99 -> unit 3.33; update to 4 -> 13.32
+        item = ItemFactory(quantity=3, price=Decimal("9.99"))
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}", json={"quantity": 4}
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(r.get_json()["price"]), Decimal("13.32"))
+
+        # Now with explicit unit price: 1.235 * 2 = 2.47 (ROUND_HALF_UP)
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}",
+            json={"quantity": 2, "unit_price": "1.235"},
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(Decimal(r.get_json()["price"]), Decimal("2.47"))
+
+    def test_update_item_not_found_cases_and_415(self):
+        """404s for missing cart/item; 415 for bad content type"""
+        cart = self._create_shopcarts(1)[0]
+
+        # 404: missing cart
+        r = self.client.put(f"{BASE_URL}/0/items/1", json={"quantity": 1})
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 404: item not in cart
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/999999", json={"quantity": 1}
+        )
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 415: bad content type
+        item = ItemFactory()
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}",
+            data='{"quantity": 2}',
+            content_type="text/plain",
+        )
+        self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_delete_item_both_paths(self):
+        """204 when item exists and when item missing"""
+        cart = self._create_shopcarts(1)[0]
+        item = ItemFactory()
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        r = self.client.delete(f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}")
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
+
+        r = self.client.delete(f"{BASE_URL}/{cart.shopcart_id}/items/999999")
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_create_shopcart_bad_content_type(self):
+        """415 when Content-Type header is missing for POST /shopcarts"""
+        r = self.client.post(BASE_URL)  # no body, no content_type header
+        self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_get_item_cart_not_found(self):
+        """404 when requesting an item from a missing shopcart"""
+        r = self.client.get(f"{BASE_URL}/0/items/1")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_shopcart_success(self):
+        """It should update an existing shopcart (PUT /shopcarts/<id>)"""
+        cart = self._create_shopcarts(1)[0]
+        # Change to a unique customer_id to avoid unique constraint collisions
+        new_payload = {"customer_id": cart.customer_id + 1000}
+        r = self.client.put(f"{BASE_URL}/{cart.shopcart_id}", json=new_payload)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        body = r.get_json()
+        self.assertEqual(body["customer_id"], new_payload["customer_id"])
+
+    def test_update_shopcart_not_found(self):
+        """404 on updating a non-existent shopcart"""
+        r = self.client.put(f"{BASE_URL}/0", json={"customer_id": 123})
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_shopcart_bad_content_type(self):
+        """415 when Content-Type is wrong on PUT /shopcarts/<id>"""
+        cart = self._create_shopcarts(1)[0]
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}",
+            data='{"customer_id": 9}',
+            content_type="text/plain",
+        )
+        self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_shopcart_wrong_content_type(self):
+        """415 when Content-Type is wrong on POST /shopcarts"""
+        r = self.client.post(
+            BASE_URL, data='{"customer_id": 777}', content_type="text/plain"
+        )
+        self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
