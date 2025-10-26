@@ -51,9 +51,6 @@ def index():
 ######################################################################
 
 
-# Todo: Place your REST API code here ...
-
-
 ######################################################################
 # LIST ALL SHOPCARTS
 ######################################################################
@@ -63,7 +60,6 @@ def list_shopcarts():
     app.logger.info("Request for shopcart list")
 
     shopcarts = []
-    # TODO: query for next hw
     shopcarts = ShopCarts.all()
     results = [shopcart.serialize() for shopcart in shopcarts]
     app.logger.info("Returning %d shopcarts", len(results))
@@ -190,9 +186,50 @@ def get_shopcart_item(shopcart_id, item_id):
     return jsonify(result), status.HTTP_200_OK
 
 
+def validate_item_data(data):
+    """Validate and return sanitized quantity and unit_price"""
+    if data is None:
+        abort(status.HTTP_400_BAD_REQUEST, "Request body must be valid JSON.")
+
+    if "quantity" not in data:
+        abort(status.HTTP_400_BAD_REQUEST, "Field 'quantity' is required.")
+
+    try:
+        quantity = int(data["quantity"])
+    except (TypeError, ValueError):
+        abort(status.HTTP_400_BAD_REQUEST, "Quantity must be an integer.")
+
+    if quantity < 1:
+        abort(status.HTTP_400_BAD_REQUEST, "Invalid quantity: must be at least 1.")
+
+    unit_price = None
+    if "unit_price" in data and data["unit_price"] is not None:
+        try:
+            unit_price = Decimal(str(data["unit_price"]))
+        except (InvalidOperation, ValueError) as error:
+            abort(status.HTTP_400_BAD_REQUEST, f"Invalid unit_price value: {error}")
+
+    return quantity, unit_price
+
+
+def compute_new_price(item, quantity, unit_price):
+    """Compute updated total price for item"""
+    # Infer price if not given
+    if unit_price is None:
+        unit_price = item.price / item.quantity
+
+    if unit_price < 0:
+        abort(status.HTTP_400_BAD_REQUEST, "unit_price must not be negative.")
+
+    return (unit_price * Decimal(quantity)).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+
+
 @app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["PUT"])
 def update_shopcart_item(shopcart_id, item_id):
-    """Update the quantity for an item in a shopcart"""
+    """Update the quantity or price for an item in a shopcart"""
     app.logger.info(
         "Request to update item [%s] in shopcart [%s]", item_id, shopcart_id
     )
@@ -213,59 +250,15 @@ def update_shopcart_item(shopcart_id, item_id):
         )
 
     data = request.get_json()
-    if data is None:
-        abort(status.HTTP_400_BAD_REQUEST, "Request body must be valid JSON.")
-
-    if "quantity" not in data:
-        abort(status.HTTP_400_BAD_REQUEST, "Field 'quantity' is required.")
-
-    try:
-        new_quantity = int(data["quantity"])
-    except (TypeError, ValueError):
-        abort(status.HTTP_400_BAD_REQUEST, "Quantity must be an integer.")
-
-    if new_quantity < 1:
-        abort(
-            status.HTTP_400_BAD_REQUEST,
-            "Invalid quantity: must be at least 1.",
-        )
-
-    # Determine the unit price from the request or infer from current price
-    if "unit_price" in data and data["unit_price"] is not None:
-        try:
-            unit_price = Decimal(str(data["unit_price"]))
-        except (InvalidOperation, ValueError) as error:
-            abort(
-                status.HTTP_400_BAD_REQUEST,
-                f"Invalid unit_price value: {error}",
-            )
-    else:
-        # Avoid division by zero; quantity validator already prevents zero
-        unit_price = item.price / item.quantity
-
-    if unit_price < 0:
-        abort(
-            status.HTTP_400_BAD_REQUEST,
-            "unit_price must not be negative.",
-        )
-
-    # Quantize to two decimal places using bankers rounding
-    new_price = (unit_price * Decimal(new_quantity)).quantize(
-        Decimal("0.01"),
-        rounding=ROUND_HALF_UP,
-    )
+    new_quantity, unit_price = validate_item_data(data)
+    new_price = compute_new_price(item, new_quantity, unit_price)
 
     item.quantity = new_quantity
     item.price = new_price
     shopcart.update()
 
-    updated_item = {
-        "item_id": item.item_id,
-        "shopcart_id": item.shopcart_id,
-        "product_id": item.product_id,
-        "quantity": item.quantity,
-        "price": str(item.price),
-    }
+    response = item.serialize()
+    response["price"] = str(response["price"])
     app.logger.info(
         "Item [%s] in shopcart [%s] updated to quantity=%s price=%s",
         item_id,
@@ -273,7 +266,7 @@ def update_shopcart_item(shopcart_id, item_id):
         new_quantity,
         new_price,
     )
-    return jsonify(updated_item), status.HTTP_200_OK
+    return jsonify(response), status.HTTP_200_OK
 
 
 @app.route("/shopcarts/<int:shopcart_id>/items", methods=["GET"])

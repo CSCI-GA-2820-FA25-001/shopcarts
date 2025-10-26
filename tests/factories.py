@@ -1,9 +1,7 @@
 """Factories to create model instances for testing."""
 
 from decimal import Decimal
-
 import factory
-
 from service.models import ShopCarts, Items
 
 
@@ -11,6 +9,8 @@ class ShopCartFactory(factory.Factory):
     """Create shopcarts for testing"""
 
     class Meta:  # pylint: disable=too-few-public-methods
+        """Factory metadata mapping this class to the model."""
+
         model = ShopCarts
 
     shopcart_id = None
@@ -21,6 +21,8 @@ class ItemFactory(factory.Factory):
     """Create items for testing"""
 
     class Meta:  # pylint: disable=too-few-public-methods
+        """Factory metadata mapping this class to the model."""
+
         model = Items
 
     item_id = None
