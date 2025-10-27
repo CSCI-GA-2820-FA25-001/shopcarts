@@ -21,6 +21,8 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete ShopCart
 """
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
 from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
 from service.models import ShopCarts, Items
@@ -49,7 +51,6 @@ def index():
 ######################################################################
 
 
-# Todo: Place your REST API code here ...
 ######################################################################
 # LIST ALL SHOPCARTS
 ######################################################################
@@ -59,7 +60,6 @@ def list_shopcarts():
     app.logger.info("Request for shopcart list")
 
     shopcarts = []
-    # TODO: query for next hw
     shopcarts = ShopCarts.all()
     results = [shopcart.serialize() for shopcart in shopcarts]
     app.logger.info("Returning %d shopcarts", len(results))
@@ -231,17 +231,53 @@ def get_shopcart_item(shopcart_id, item_id):
     return jsonify(result), status.HTTP_200_OK
 
 
-######################################################################
-# UPDATE AN EXISTING ITEM
-######################################################################
-@app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["PUT"])
-def update_shopcart_items(shopcart_id, item_id):
-    """
-    Update an Item
+def validate_item_data(data):
+    """Validate and return sanitized quantity and unit_price"""
+    if data is None:
+        abort(status.HTTP_400_BAD_REQUEST, "Request body must be valid JSON.")
 
-    This endpoint will update an Item based on the body that is posted
-    """
-    app.logger.info("Request to Update an item with id [%s]", item_id)
+    if "quantity" not in data:
+        abort(status.HTTP_400_BAD_REQUEST, "Field 'quantity' is required.")
+
+    try:
+        quantity = int(data["quantity"])
+    except (TypeError, ValueError):
+        abort(status.HTTP_400_BAD_REQUEST, "Quantity must be an integer.")
+
+    if quantity < 1:
+        abort(status.HTTP_400_BAD_REQUEST, "Invalid quantity: must be at least 1.")
+
+    unit_price = None
+    if "unit_price" in data and data["unit_price"] is not None:
+        try:
+            unit_price = Decimal(str(data["unit_price"]))
+        except (InvalidOperation, ValueError) as error:
+            abort(status.HTTP_400_BAD_REQUEST, f"Invalid unit_price value: {error}")
+
+    return quantity, unit_price
+
+
+def compute_new_price(item, quantity, unit_price):
+    """Compute updated total price for item"""
+    # Infer price if not given
+    if unit_price is None:
+        unit_price = item.price / item.quantity
+
+    if unit_price < 0:
+        abort(status.HTTP_400_BAD_REQUEST, "unit_price must not be negative.")
+
+    return (unit_price * Decimal(quantity)).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+
+
+@app.route("/shopcarts/<int:shopcart_id>/items/<int:item_id>", methods=["PUT"])
+def update_shopcart_item(shopcart_id, item_id):
+    """Update the quantity or price for an item in a shopcart"""
+    app.logger.info(
+        "Request to update item [%s] in shopcart [%s]", item_id, shopcart_id
+    )
     check_content_type("application/json")
 
     # Attempt to find the ShopCart and abort if not found
@@ -262,14 +298,23 @@ def update_shopcart_items(shopcart_id, item_id):
 
     # Update the Item with the new data
     data = request.get_json()
-    app.logger.info("Processing: %s", data)
-    item.deserialize(data)
+    new_quantity, unit_price = validate_item_data(data)
+    new_price = compute_new_price(item, new_quantity, unit_price)
 
-    # Save the updates to the database
-    item.update()
+    item.quantity = new_quantity
+    item.price = new_price
+    shopcart.update()
 
-    app.logger.info("Item with ID: %d updated.", item.item_id)
-    return jsonify(item.serialize()), status.HTTP_200_OK
+    response = item.serialize()
+    response["price"] = str(response["price"])
+    app.logger.info(
+        "Item [%s] in shopcart [%s] updated to quantity=%s price=%s",
+        item_id,
+        shopcart_id,
+        new_quantity,
+        new_price,
+    )
+    return jsonify(response), status.HTTP_200_OK
 
 
 ######################################################################

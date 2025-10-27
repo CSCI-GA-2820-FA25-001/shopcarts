@@ -220,6 +220,7 @@ class Items(db.Model):
 
     @validates("quantity")
     def validate_quantity(self, key, quantity):  # pylint: disable=unused-argument
+        """Validate that quantity is at least 1 before saving to the database."""
         if quantity is None or int(quantity) < 1:
             raise DataValidationError("Invalid quantity: must be at least 1")
         return int(quantity)

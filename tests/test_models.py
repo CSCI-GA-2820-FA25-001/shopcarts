@@ -156,9 +156,9 @@ class TestShopCartModel(TestCase):
         shopcart = ShopCartFactory()
         shopcart.create()
 
-        with patch.object(db.session, "commit", side_effect=Exception("commit failed")), patch.object(
-            db.session, "rollback"
-        ) as mock_rollback:
+        with patch.object(
+            db.session, "commit", side_effect=Exception("commit failed")
+        ), patch.object(db.session, "rollback") as mock_rollback:
             with self.assertRaises(DataValidationError) as context:
                 shopcart.update()
 
@@ -183,6 +183,8 @@ class TestShopCartModel(TestCase):
         """It should raise DataValidationError when deserialize hits AttributeError"""
 
         class BadMapping(dict):
+            """A mock mapping that raises AttributeError on access (used for testing)."""
+
             def __getitem__(self, key):  # pylint: disable=unused-argument
                 raise AttributeError("boom")
 
@@ -209,11 +211,15 @@ class TestShopCartModel(TestCase):
         with self.assertRaises(DataValidationError) as context:
             shopcart.deserialize(None)
 
-        self.assertIn("body of request contained bad or no data", str(context.exception))
+        self.assertIn(
+            "body of request contained bad or no data", str(context.exception)
+        )
 
     def test_item_repr_includes_fields(self):
         """It should include identifying fields in the repr"""
-        item = Items(item_id=5, shopcart_id=7, product_id=9, quantity=3, price=Decimal("2.50"))
+        item = Items(
+            item_id=5, shopcart_id=7, product_id=9, quantity=3, price=Decimal("2.50")
+        )
 
         representation = repr(item)
 
@@ -226,11 +232,16 @@ class TestShopCartModel(TestCase):
         """It should raise DataValidationError and rollback on failed item create"""
         shopcart = ShopCartFactory()
         shopcart.create()
-        item = Items(shopcart_id=shopcart.shopcart_id, product_id=1, quantity=1, price=Decimal("1.00"))
+        item = Items(
+            shopcart_id=shopcart.shopcart_id,
+            product_id=1,
+            quantity=1,
+            price=Decimal("1.00"),
+        )
 
-        with patch.object(db.session, "commit", side_effect=Exception("create failed")), patch.object(
-            db.session, "rollback"
-        ) as mock_rollback:
+        with patch.object(
+            db.session, "commit", side_effect=Exception("create failed")
+        ), patch.object(db.session, "rollback") as mock_rollback:
             with self.assertRaises(DataValidationError) as context:
                 item.create()
 
@@ -241,6 +252,8 @@ class TestShopCartModel(TestCase):
         """It should raise DataValidationError when item deserialize hits AttributeError"""
 
         class BadMapping(dict):
+            """A mock mapping that raises AttributeError on access (used for testing)."""
+
             def __getitem__(self, key):  # pylint: disable=unused-argument
                 raise AttributeError("zap")
 
@@ -267,4 +280,6 @@ class TestShopCartModel(TestCase):
         with self.assertRaises(DataValidationError) as context:
             item.deserialize(None)
 
-        self.assertIn("body of request contained bad or no data", str(context.exception))
+        self.assertIn(
+            "body of request contained bad or no data", str(context.exception)
+        )
