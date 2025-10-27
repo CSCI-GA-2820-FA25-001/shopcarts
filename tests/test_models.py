@@ -283,3 +283,81 @@ class TestShopCartModel(TestCase):
         self.assertIn(
             "body of request contained bad or no data", str(context.exception)
         )
+
+
+######################################################################
+#  Q U E R Y   T E S T   C A S E S
+######################################################################
+class TestModelQueries(TestShopCartModel):
+    """ShopCarts & Items Model Query Tests"""
+
+    def test_find_shopcart(self):
+        """It should Find a ShopCart by ID"""
+        carts = ShopCartFactory.create_batch(5)
+        for c in carts:
+            c.create()
+        self.assertEqual(len(ShopCarts.all()), 5)
+
+        cart = ShopCarts.find(carts[1].shopcart_id)
+        self.assertIsNotNone(cart)
+        self.assertEqual(cart.shopcart_id, carts[1].shopcart_id)
+        self.assertEqual(cart.customer_id, carts[1].customer_id)
+
+    def test_find_by_customer_id(self):
+        """It should Find ShopCarts by customer_id"""
+        carts = ShopCartFactory.create_batch(10)
+        for c in carts:
+            c.create()
+
+        customer_id = carts[0].customer_id
+        expected = len([c for c in carts if c.customer_id == customer_id])
+
+        found = ShopCarts.find_by_customer_id(customer_id)
+        self.assertEqual(found.count(), expected)
+        for sc in found:
+            self.assertEqual(sc.customer_id, customer_id)
+
+    def test_find_items_by_shopcart_id(self):
+        """It should Find Items by shopcart_id"""
+        cart = ShopCartFactory()
+        cart.create()
+        cart1 = ShopCartFactory()
+        cart1.create()
+        cart2 = ShopCartFactory()
+        cart2.create()
+
+        it1 = ItemFactory(shopcart_id=cart1.shopcart_id)
+        it2 = ItemFactory(shopcart_id=cart1.shopcart_id)
+        it3 = ItemFactory(shopcart_id=cart2.shopcart_id)
+        for it in (it1, it2, it3):
+            it.create()
+
+        found = Items.find_by_shopcart_id(cart1.shopcart_id)
+        self.assertEqual(found.count(), 2)
+        for it in found:
+            self.assertEqual(it.shopcart_id, cart1.shopcart_id)
+
+        found2 = Items.find_by_shopcart_id(cart2.shopcart_id)
+        self.assertEqual(found2.count(), 1)
+        for it in found2:
+            self.assertEqual(it.shopcart_id, cart2.shopcart_id)
+
+        found0 = Items.find_by_shopcart_id(cart.shopcart_id)
+        self.assertEqual(found0.count(), 0)
+
+    def test_find_items_by_product_id(self):
+        """It should Find Items by product_id"""
+        cart1, cart2 = ShopCartFactory(), ShopCartFactory()
+        cart1.create()
+        cart2.create()
+
+        it1 = ItemFactory(shopcart_id=cart1.shopcart_id, product_id=500)
+        it2 = ItemFactory(shopcart_id=cart2.shopcart_id, product_id=500)
+        it3 = ItemFactory(shopcart_id=cart1.shopcart_id, product_id=777)
+        for it in (it1, it2, it3):
+            it.create()
+
+        found = Items.find_by_product_id(500)
+        self.assertEqual(found.count(), 2)
+        for it in found:
+            self.assertEqual(it.product_id, 500)

@@ -122,6 +122,12 @@ class ShopCarts(db.Model):
         logger.info("Looking up shopcart id=%s", shopcart_id)
         return cls.query.session.get(cls, shopcart_id)
 
+    @classmethod
+    def find_by_customer_id(cls, customer_id: int):
+        """Returns all ShopCarts with the given customer_id"""
+        logger.info("Processing query for customer_id=%s ...", customer_id)
+        return cls.query.filter(cls.customer_id == customer_id)
+
 
 class Items(db.Model):
     """Represents an item in a shopcart"""
@@ -224,3 +230,31 @@ class Items(db.Model):
         if quantity is None or int(quantity) < 1:
             raise DataValidationError("Invalid quantity: must be at least 1")
         return int(quantity)
+
+    ##################################################
+    # CLASS METHODS
+    ##################################################
+
+    @classmethod
+    def all(cls):
+        """Returns all of the Items in the database"""
+        logger.info("Processing all Items")
+        return cls.query.all()
+
+    @classmethod
+    def find(cls, item_id: int):
+        """Finds an Item by its ID"""
+        logger.info("Processing lookup for item_id %s ...", item_id)
+        return cls.query.session.get(cls, item_id)
+
+    @classmethod
+    def find_by_shopcart_id(cls, shopcart_id: int):
+        """Returns all Items that belong to a given shopcart"""
+        logger.info("Processing query for shopcart_id=%s ...", shopcart_id)
+        return cls.query.filter(cls.shopcart_id == shopcart_id)
+
+    @classmethod
+    def find_by_product_id(cls, product_id: int):
+        """Returns all Items that match a given product_id"""
+        logger.info("Processing query for product_id=%s ...", product_id)
+        return cls.query.filter(cls.product_id == product_id)
