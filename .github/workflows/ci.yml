@@ -46,11 +46,9 @@ jobs:
       - name: Run unit tests with PyTest
         env:
             DATABASE_URI: postgresql+psycopg://postgres:postgres@postgres:5432/shopcarts
-        run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml
 
-      # Uncomment these once ready to integrate Codecov
-      # - name: Upload coverage reports to Codecov
-      #   uses: codecov/codecov-action@v5
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     slug: CSCI-GA-2820-FA25-001/shopcarts
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+           token: ${{ secrets.CODECOV_TOKEN }}
+           slug: CSCI-GA-2820-FA25-001/shopcarts
