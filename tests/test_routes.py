@@ -445,6 +445,66 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
+    ######################################################################
+    #  C L E A R   C A R T   T E S T S
+    ######################################################################
+
+    def test_clear_nonempty_cart(self):
+        """It should clear all items from a non-empty cart"""
+        # Create a cart with items
+        cart = self._create_shopcarts(1)[0]
+        item1 = ItemFactory(
+            shopcart_id=cart.shopcart_id,
+            product_id=1,
+            quantity=2,
+            price=Decimal("2.50"),
+        )
+        item1.create()
+        item2 = ItemFactory(
+            shopcart_id=cart.shopcart_id,
+            product_id=2,
+            quantity=1,
+            price=Decimal("0.99"),
+        )
+        item2.create()
+
+        # Clear the cart
+        resp = self.client.post(f"{BASE_URL}/{cart.shopcart_id}/clear")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        # Verify cart is now empty
+        get_resp = self.client.get(f"{BASE_URL}/{cart.shopcart_id}/items")
+        self.assertEqual(get_resp.status_code, status.HTTP_200_OK)
+        items = get_resp.get_json()
+        self.assertEqual(len(items), 0)
+
+    def test_clear_invalid_cart_id(self):
+        """It should return 404 when attempting to clear a non-existent cart"""
+        resp = self.client.post(f"{BASE_URL}/999999/clear")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        data = resp.get_json()
+        msg = data.get("message", "").lower()
+        self.assertIn("not found", msg)
+
+    def test_clear_already_empty_is_idempotent(self):
+        """It should handle clearing an already empty cart (idempotent operation)"""
+        # Create an empty cart
+        cart = self._create_shopcarts(1)[0]
+
+        # First clear
+        resp1 = self.client.post(f"{BASE_URL}/{cart.shopcart_id}/clear")
+        self.assertEqual(resp1.status_code, status.HTTP_200_OK)
+
+        # Second clear should also be OK (idempotent)
+        resp2 = self.client.post(f"{BASE_URL}/{cart.shopcart_id}/clear")
+        self.assertEqual(resp2.status_code, status.HTTP_200_OK)
+
+        # Verify cart is still empty
+        get_resp = self.client.get(f"{BASE_URL}/{cart.shopcart_id}/items")
+        self.assertEqual(get_resp.status_code, status.HTTP_200_OK)
+        items = get_resp.get_json()
+        self.assertEqual(len(items), 0)
+
     def test_query_shopcarts_by_customer_id(self):
         """It should return shopcarts filtered by customer_id"""
         carts = self._create_shopcarts(2)

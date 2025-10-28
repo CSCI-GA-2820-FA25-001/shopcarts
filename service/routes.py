@@ -323,6 +323,32 @@ def update_shopcart_item(shopcart_id, item_id):
 
 
 ######################################################################
+# CLEAR SHOP CART
+######################################################################
+@app.route("/shopcarts/<int:shopcart_id>/clear", methods=["POST"])
+def clear_shopcart(shopcart_id: int):
+    """POST /shopcarts/<id>/clear — remove all items from a cart (idempotent)."""
+    app.logger.info("Request to clear shopcart id=%s", shopcart_id)
+
+    cart = ShopCarts.find(shopcart_id)
+    if cart is None:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            description=f"Shopcart with id '{shopcart_id}' was not found.",
+        )
+
+    # Remove all items; cascade will delete-orphan on commit
+    if cart.items:
+        cart.items.clear()
+
+    # Persist (also updates updated_at per model.update())
+    cart.update()
+
+    # Return the canonical representation used by GET /shopcarts/<id>
+    return jsonify(cart.serialize()), status.HTTP_200_OK
+
+
+######################################################################
 # LIST AN ITEM
 ######################################################################
 @app.route("/shopcarts/<int:shopcart_id>/items", methods=["GET"])
