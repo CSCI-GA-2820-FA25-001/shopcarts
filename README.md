@@ -1,7 +1,7 @@
 # 🛒 ShopCarts REST API Service
 
 [![Build Status](https://github.com/CSCI-GA-2820-FA25-001/shopcarts/actions/workflows/ci.yml/badge.svg)](https://github.com/CSCI-GA-2820-FA25-001/shopcarts/actions/workflows/ci.yml)
-
+[![codecov](https://codecov.io/gh/CSCI-GA-2820-FA25-001/shopcarts/branch/main/graph/badge.svg)](https://codecov.io/gh/CSCI-GA-2820-FA25-001/shopcarts)
 ## Overview
 This microservice provides a RESTful API for managing customer **ShopCarts** and their **Items**.  
 It allows clients to **create, read, update, delete, and list** shopcarts and items, following REST best practices.  
