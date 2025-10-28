@@ -45,7 +45,8 @@ jobs:
 
       - name: Run unit tests with PyTest
         env:
-            DATABASE_URI: postgresql+psycopg://postgres:postgres@postgres:5432/shopcarts
+            DATABASE_URI: postgresql+psycopg://postgres:postgres@postgres:5432/shopcarts 
+        run: pytest --pspec --cov=service --cov-fail-under=95 --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
