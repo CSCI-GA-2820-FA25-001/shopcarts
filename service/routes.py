@@ -56,13 +56,18 @@ def index():
 ######################################################################
 @app.route("/shopcarts", methods=["GET"])
 def list_shopcarts():
-    """Returns all of the Shopcarts"""
+    """Returns filtered list of Shopcarts"""
     app.logger.info("Request for shopcart list")
 
-    shopcarts = []
-    shopcarts = ShopCarts.all()
-    results = [shopcart.serialize() for shopcart in shopcarts]
-    app.logger.info("Returning %d shopcarts", len(results))
+    customer_id = request.args.get("customer_id", type=int)
+
+    if customer_id is not None:
+        app.logger.info("Filtering shopcarts by customer_id=%s", customer_id)
+        shopcarts = ShopCarts.find_by_customer_id(customer_id).all()
+    else:
+        shopcarts = ShopCarts.all()
+
+    results = [sc.serialize() for sc in shopcarts]
     return jsonify(results), status.HTTP_200_OK
 
 

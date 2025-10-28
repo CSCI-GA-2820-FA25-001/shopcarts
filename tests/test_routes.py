@@ -444,3 +444,13 @@ class TestYourResourceService(TestCase):
             BASE_URL, data='{"customer_id": 777}', content_type="text/plain"
         )
         self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_query_shopcarts_by_customer_id(self):
+        """It should return shopcarts filtered by customer_id"""
+        carts = self._create_shopcarts(2)
+        cart1 = carts[0]
+        response = self.client.get(f"{BASE_URL}?customer_id={cart1.customer_id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["customer_id"], cart1.customer_id)
