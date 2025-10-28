@@ -504,3 +504,13 @@ class TestYourResourceService(TestCase):
         self.assertEqual(get_resp.status_code, status.HTTP_200_OK)
         items = get_resp.get_json()
         self.assertEqual(len(items), 0)
+
+    def test_query_shopcarts_by_customer_id(self):
+        """It should return shopcarts filtered by customer_id"""
+        carts = self._create_shopcarts(2)
+        cart1 = carts[0]
+        response = self.client.get(f"{BASE_URL}?customer_id={cart1.customer_id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["customer_id"], cart1.customer_id)
