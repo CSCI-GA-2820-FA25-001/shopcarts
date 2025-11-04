@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shopcarts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shopcarts
+  template:
+    metadata:
+      labels:
+        app: shopcarts
+    spec:
+      containers:
+      - name: shopcarts
+        image: cluster-registry:5000/shopcarts:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080 
+        
+        env:
+        - name: DATABASE_URI
+          valueFrom:
+            secretKeyRef:
+              name: shopcarts-creds 
+              key: database-uri 
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
