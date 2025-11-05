@@ -447,3 +447,12 @@ def delete_shopcart_item(shopcart_id, item_id):
         )
 
     return {}, status.HTTP_204_NO_CONTENT
+
+
+############################################################
+# Health Endpoint
+############################################################
+@app.route("/health", methods=["GET"])
+def health():
+    """Health status used by Kubernetes probes"""
+    return {"status": "OK"}, status.HTTP_200_OK
