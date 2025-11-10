@@ -23,7 +23,7 @@ and Delete ShopCart
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from flask import jsonify, request, url_for, abort
+from flask import jsonify, request, url_for, abort, render_template
 from flask import current_app as app  # Import Flask application
 from service.models import ShopCarts, Items
 from service.common import status  # HTTP Status Codes
@@ -44,6 +44,16 @@ def index():
         ),
         status.HTTP_200_OK,
     )
+
+
+######################################################################
+# ADMIN UI
+######################################################################
+
+@app.route("/admin", methods=["GET"])
+def admin_ui():
+    """Serve the single-page admin UI"""
+    return render_template("admin.html")
 
 
 ######################################################################
