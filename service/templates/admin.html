@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>ShopCarts Admin Panel</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@3.4.1/cerulean/bootstrap.min.css">
+</head>
+
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>ShopCarts Admin</h1>
+      <p class="text-muted">Internal UI for managing Shopcarts and Items</p>
+    </div>
+
+    <!-- Status Message -->
+    <div class="table-responsive">
+      <table class="table">
+        <tr>
+          <td>Status:</td>
+          <td><span id="flash_message"></span></td>
+        </tr>
+      </table>
+    </div>
+
+    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active"><a href="#tab-shopcarts" aria-controls="tab-shopcarts" role="tab"
+          data-toggle="tab">Shopcarts</a></li>
+      <li role="presentation"><a href="#tab-items" aria-controls="tab-items" role="tab" data-toggle="tab">Items</a></li>
+    </ul>
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="tab-shopcarts">
+
+        <!-- Shopcarts Panel -->
+        <div class="col-md-12" id="cart_form">
+          <h3>Shopcarts</h3>
+          <div class="well">
+            <div class="form-horizontal">
+              <div class="form-group">
+                <label class="control-label col-sm-2" for="shopcart_id">Shopcart ID:</label>
+                <div class="col-sm-6">
+                  <input type="text" class="form-control" id="shopcart_id" placeholder="Enter Shopcart ID">
+                </div>
+
+              </div>
+            </div>
+
+            <div class="form-horizontal">
+              <div class="form-group">
+                <label class="control-label col-sm-2" for="customer_id">Customer ID:</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="customer_id" placeholder="Enter Customer ID">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button type="button" class="btn btn-primary" id="search-carts-btn">List All</button>
+                  <button type="button" class="btn btn-success" id="create-cart-btn">Create</button>
+                  <button type="button" class="btn btn-warning" id="update-cart-btn">Update</button>
+                  <button type="button" class="btn btn-primary" id="retrieve-cart-btn">Retrieve</button>
+                  <button type="button" class="btn btn-danger" id="delete-cart-btn">Delete</button>
+                  <button type="button" class="btn btn-info" id="clear-cart-btn">Clear Cart Items</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shopcarts Results -->
+        <div class="table-responsive col-md-12" id="shopcarts_results">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th class="col-md-2">Shopcart ID</th>
+                <th class="col-md-2">Customer ID</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div> <!-- end tab-shopcarts -->
+
+      <!-- Items Panel -->
+      <div role="tabpanel" class="tab-pane" id="tab-items">
+        <div class="col-md-12" id="items_form">
+          <h3>Items</h3>
+          <div class="well">
+            <div class="form-horizontal">
+              <div class="form-group">
+                <label class="control-label col-sm-2" for="item_shopcart_id">Shopcart ID:</label>
+                <div class="col-sm-4">
+                  <input type="text" class="form-control" id="item_shopcart_id"
+                    placeholder="Enter Shopcart ID for items">
+                </div>
+                <label class="control-label col-sm-2" for="item_id">Item ID:</label>
+                <div class="col-sm-4">
+                  <input type="text" class="form-control" id="item_id" placeholder="Enter Item ID">
+                </div>
+              </div>
+
+              <!-- retrieve/delete moved to bottom action row -->
+            </div>
+
+            <div class="form-horizontal">
+              <div class="form-group">
+                <label class="control-label col-sm-2" for="product_id">Product ID:</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="product_id" placeholder="Enter Product ID">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="control-label col-sm-2" for="quantity">Quantity:</label>
+                <div class="col-sm-4">
+                  <input type="number" class="form-control" id="quantity" placeholder="e.g., 2">
+                </div>
+                <label class="control-label col-sm-2" for="unit_price">Unit Price:</label>
+                <div class="col-sm-4">
+                  <input type="number" class="form-control" id="unit_price" step="0.01" placeholder="e.g., 19.99">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button type="button" class="btn btn-primary" id="list-items-btn">List All</button>
+                  <button type="button" class="btn btn-success" id="create-item-btn">Create</button>
+                  <button type="button" class="btn btn-warning" id="update-item-btn">Update</button>
+                  <button type="button" class="btn btn-primary" id="retrieve-item-btn">Retrieve</button>
+                  <button type="button" class="btn btn-danger" id="delete-item-btn">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Results -->
+        <div class="table-responsive col-md-12" id="items_results">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th class="col-md-2">Item ID</th>
+                <th class="col-md-2">Product ID</th>
+                <th class="col-md-2">Quantity</th>
+                <th class="col-md-2">Price</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div> <!-- end tab-items -->
+    </div> <!-- end .tab-content -->
+
+    <footer>
+      <br><br>
+      <p>&copy; ShopCarts Admin</p>
+    </footer>
+  </div>
+
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/shopcarts_admin.js') }}"></script>
+</body>
+
+</html>

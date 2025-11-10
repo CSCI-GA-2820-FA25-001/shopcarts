@@ -79,6 +79,14 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertEqual(data["name"], "ShopCarts Demo REST API Service")
 
+    def test_admin_ui(self):
+        """It should serve the Admin UI page"""
+        response = self.client.get("/admin")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should return HTML content and include the page header text
+        self.assertIn("text/html", response.content_type)
+        self.assertIn(b"ShopCarts Admin", response.data)
+
     ############################################################
     # Utility function to bulk create shopcarts
     ############################################################
