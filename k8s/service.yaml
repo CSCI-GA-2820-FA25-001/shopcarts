@@ -1,0 +1,13 @@
+# k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopcarts
+spec:
+  selector:
+    app: shopcarts
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
