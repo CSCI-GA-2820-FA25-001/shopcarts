@@ -28,7 +28,7 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-creds
+                  name: shopcarts-creds
                   key: password
             - name: POSTGRES_USER
               valueFrom:
