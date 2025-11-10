@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopcarts
+  labels:
+    app: shopcarts
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: shopcarts.local
+      http:
+        paths:
+          - path: /shopcarts
+            pathType: Prefix
+            backend:
+              service:
+                name: shopcarts
+                port:
+                  number: 8080
+          - path: /ui
+            pathType: Prefix
+            backend:
+              service:
+                name: shopcarts
+                port:
+                  number: 8080
