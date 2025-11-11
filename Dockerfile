@@ -10,3 +10,23 @@ RUN sudo python -m pip install --upgrade pip pipenv && \
 # Install user mode tools
 COPY .devcontainer/scripts/install-tools.sh /tmp/
 RUN cd /tmp && bash ./install-tools.sh
+
+# Copy the application contents
+COPY wsgi.py .
+COPY service/ ./service/
+
+# Switch to a non-root user and set file ownership
+USER root
+RUN useradd --uid 1001 flask && \
+    chown -R flask /app
+USER flask
+
+# Expose any ports the app is expecting in the environment
+ENV FLASK_APP="wsgi:app"
+ENV PORT=8080
+EXPOSE $PORT
+CMD ["bash", "-c", "sleep 5 && gunicorn --log-level=info wsgi:app"]
+
+ENV GUNICORN_BIND=0.0.0.0:$PORT
+ENTRYPOINT ["gunicorn"]
+CMD ["--log-level=info", "wsgi:app"]

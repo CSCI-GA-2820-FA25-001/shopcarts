@@ -7,8 +7,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: shopcarts.local
-      http:
+    - http:
         paths:
           - path: /shopcarts
             pathType: Prefix
@@ -17,7 +16,7 @@ spec:
                 name: shopcarts
                 port:
                   number: 8080
-          - path: /ui
+          - path: /admin
             pathType: Prefix
             backend:
               service:
