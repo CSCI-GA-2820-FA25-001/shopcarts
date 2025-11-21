@@ -411,6 +411,13 @@ class TestYourResourceService(TestCase):
         r = self.client.delete(f"{BASE_URL}/{cart.shopcart_id}/items/999999")
         self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
 
+    def test_delete_item_cart_not_found(self):
+        """404 when deleting an item from a missing shopcart"""
+        resp = self.client.delete(f"{BASE_URL}/0/items/1")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        data = resp.get_json()
+        self.assertIn("was not found", data["message"])
+
     def test_create_shopcart_bad_content_type(self):
         """415 when Content-Type header is missing for POST /shopcarts"""
         r = self.client.post(BASE_URL)  # no body, no content_type header
