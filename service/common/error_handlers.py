@@ -16,85 +16,101 @@
 """
 Module: error_handlers
 """
+
 from flask import jsonify
 from flask import current_app as app  # Import Flask application
+from werkzeug.exceptions import HTTPException
 from service.models import DataValidationError
 from . import status
+from service.routes import api
+
+######################################################################
+# Helpers
+######################################################################
+_STATUS_NAME_MAP = {
+    getattr(status, name): " ".join(name.split("_")[2:]).title()
+    for name in dir(status)
+    if name.startswith("HTTP_")
+}
+
+
+def _make_error_payload(error) -> tuple[dict, int]:
+    """Normalize different error types into a JSON-friendly payload."""
+    code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    message = ""
+
+    # Tuples/lists in the form (status_code, message)
+    if isinstance(error, (tuple, list)):
+        if len(error) > 0 and isinstance(error[0], int):
+            code = error[0]
+        if len(error) > 1 and isinstance(error[1], str):
+            message = error[1]
+
+    # HTTPExceptions (typically from abort())
+    elif isinstance(error, HTTPException):
+        code = getattr(error, "code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Prefer the Werkzeug description; fall back to string form
+        description = getattr(error, "description", "") or ""
+        message = description or str(error)
+
+    # Any other exception or error object
+    else:
+        code = getattr(error, "code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if error is not None:
+            message = str(error)
+
+    js = {
+        "status": code,
+        "error": _STATUS_NAME_MAP.get(code, "Unknown"),
+        "message": message,
+    }
+    return js, code
+
+
+def _handle(error, is_api: bool):
+    js, code = _make_error_payload(error)
+    logger = app.logger.error if js["status"] >= 500 else app.logger.warning
+    logger(js["message"])
+    return (js, code) if is_api else (jsonify(js), code)
 
 
 ######################################################################
-# Error Handlers
+# Flask App Error Handlers
 ######################################################################
 @app.errorhandler(DataValidationError)
 def request_validation_error(error):
-    """Handles Value Errors from bad data"""
-    return bad_request(error)
+    """Handles data validation errors as 400s"""
+    return _handle((status.HTTP_400_BAD_REQUEST, str(error)), False)
 
 
-@app.errorhandler(status.HTTP_400_BAD_REQUEST)
-def bad_request(error):
-    """Handles bad requests with 400_BAD_REQUEST"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_400_BAD_REQUEST, error="Bad Request", message=message
-        ),
-        status.HTTP_400_BAD_REQUEST,
-    )
+@app.errorhandler(HTTPException)
+def handle_http_exception(error):
+    """Handle all HTTPExceptions"""
+    return _handle(error, False)
 
 
-@app.errorhandler(status.HTTP_404_NOT_FOUND)
-def not_found(error):
-    """Handles resources not found with 404_NOT_FOUND"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(status=status.HTTP_404_NOT_FOUND, error="Not Found", message=message),
-        status.HTTP_404_NOT_FOUND,
-    )
-
-
-@app.errorhandler(status.HTTP_405_METHOD_NOT_ALLOWED)
-def method_not_supported(error):
-    """Handles unsupported HTTP methods with 405_METHOD_NOT_SUPPORTED"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            error="Method not Allowed",
-            message=message,
-        ),
-        status.HTTP_405_METHOD_NOT_ALLOWED,
-    )
-
-
-@app.errorhandler(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-def mediatype_not_supported(error):
-    """Handles unsupported media requests with 415_UNSUPPORTED_MEDIA_TYPE"""
-    message = str(error)
-    app.logger.warning(message)
-    return (
-        jsonify(
-            status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            error="Unsupported media type",
-            message=message,
-        ),
-        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-    )
-
-
-@app.errorhandler(status.HTTP_500_INTERNAL_SERVER_ERROR)
+@app.errorhandler(Exception)
 def internal_server_error(error):
-    """Handles unexpected server error with 500_SERVER_ERROR"""
-    message = str(error)
-    app.logger.error(message)
-    return (
-        jsonify(
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            error="Internal Server Error",
-            message=message,
-        ),
-        status.HTTP_500_INTERNAL_SERVER_ERROR,
-    )
+    """Handles unexpected server errors"""
+    return _handle((status.HTTP_500_INTERNAL_SERVER_ERROR, str(error)), False)
+
+
+######################################################################
+# Flask-RESTX Error Handlers
+######################################################################
+@api.errorhandler(DataValidationError)
+def api_request_validation_error(error):
+    """RESTX handler for data validation errors"""
+    return _handle((status.HTTP_400_BAD_REQUEST, str(error)), True)
+
+
+@api.errorhandler(HTTPException)
+def api_handle_http_exception(error):
+    """RESTX handler for HTTPExceptions"""
+    return _handle(error, True)
+
+
+@api.errorhandler(Exception)
+def api_internal_server_error(error):
+    """RESTX handler for unexpected server errors"""
+    return _handle((status.HTTP_500_INTERNAL_SERVER_ERROR, str(error)), True)

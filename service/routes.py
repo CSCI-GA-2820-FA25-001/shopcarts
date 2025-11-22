@@ -134,6 +134,12 @@ class ShopcartCollectionResources(Resource):
         app.logger.info("Processing: %s", data)
         shopcart.deserialize(data)
 
+        if ShopCarts.find_by_customer_id(shopcart.customer_id).first():
+            abort(
+                status.HTTP_409_CONFLICT,
+                f"Shopcart with customer_id '{shopcart.customer_id}' already exists.",
+            )
+
         # Save the new ShopCart to the database
         shopcart.create()
         app.logger.info("ShopCart with new id [%s] saved!", shopcart.shopcart_id)
@@ -196,9 +202,26 @@ class ShopcartResource(Resource):
                 f"Shopcart with id '{shopcart_id}' was not found.",
             )
 
-        # Update the Shopcart with the new data
+        # Parse the incoming payload
         data = request.get_json()
         app.logger.info("Processing: %s", data)
+
+        # Detect customer_id conflicts before mutating the current record.
+        # This avoids triggering a database-level unique constraint violation
+        # when SQLAlchemy flushes pending changes.
+        new_customer_id = data.get("customer_id", shopcart.customer_id)
+        conflict = (
+            ShopCarts.find_by_customer_id(new_customer_id)
+            .filter(ShopCarts.shopcart_id != shopcart_id)
+            .first()
+        )
+        if conflict:
+            abort(
+                status.HTTP_409_CONFLICT,
+                f"Shopcart with customer_id '{new_customer_id}' already exists.",
+            )
+
+        # No conflict: safely apply the update
         shopcart.deserialize(data)
 
         # Save the updates to the database
@@ -345,7 +368,9 @@ class ItemResource(Resource):
             )
 
         # Update the Item with the new data
-        data = request.get_json()
+        # Use silent=True so invalid JSON yields None, allowing
+        # validate_item_data to emit a consistent 400 error.
+        data = request.get_json(silent=True)
         new_quantity, unit_price = validate_item_data(data)
         new_price = compute_new_price(item, new_quantity, unit_price)
 
@@ -422,7 +447,7 @@ class ShopcartClear(Resource):
         if cart is None:
             abort(
                 status.HTTP_404_NOT_FOUND,
-                description=f"Shopcart with id '{shopcart_id}' was not found.",
+                f"Shopcart with id '{shopcart_id}' was not found.",
             )
 
         # Remove all items; cascade will delete-orphan on commit
