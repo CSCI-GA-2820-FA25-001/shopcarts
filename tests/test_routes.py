@@ -138,6 +138,19 @@ class TestYourResourceService(TestCase):
         new_shopcart = response.get_json()
         self.assertEqual(new_shopcart["customer_id"], test_shopcart.customer_id)
 
+    def test_create_duplicate_shopcart_conflict_json(self):
+        """409 when creating a shopcart with duplicate customer_id"""
+        existing_cart = self._create_shopcarts(1)[0]
+        payload = {"customer_id": existing_cart.customer_id}
+
+        response = self.client.post(BASE_URL, json=payload)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertTrue(response.is_json)
+        data = response.get_json()
+        self.assertEqual(data["status"], status.HTTP_409_CONFLICT)
+        self.assertEqual(data["error"], "Conflict")
+        self.assertIn("already exists", data["message"])
+
     def test_get_shopcart(self):
         """It should Get a single ShopCart"""
         # get the id of a shopcart
@@ -151,8 +164,11 @@ class TestYourResourceService(TestCase):
         """It should not Get a ShopCart thats not found"""
         response = self.client.get(f"{BASE_URL}/0")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(response.is_json)
         data = response.get_json()
         logging.debug("Response data = %s", data)
+        self.assertEqual(data["status"], status.HTTP_404_NOT_FOUND)
+        self.assertEqual(data["error"], "Not Found")
         self.assertIn("was not found", data["message"])
 
     def test_delete_shopcart(self):
@@ -297,6 +313,11 @@ class TestYourResourceService(TestCase):
 
         r = self.client.put(f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}", json={})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(r.is_json)
+        data = r.get_json()
+        self.assertEqual(data["status"], status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(data["error"], "Bad Request")
+        self.assertIn("quantity", data["message"].lower())
 
     def test_update_item_bad_type_and_lt_one(self):
         """400 when quantity bad type or < 1"""
@@ -438,6 +459,20 @@ class TestYourResourceService(TestCase):
         body = r.get_json()
         self.assertEqual(body["customer_id"], new_payload["customer_id"])
 
+    def test_update_shopcart_conflict_on_duplicate_customer_id(self):
+        """409 when updating a shopcart to an existing customer_id"""
+        carts = self._create_shopcarts(2)
+        cart1, cart2 = carts[0], carts[1]
+        payload = {"customer_id": cart1.customer_id}
+
+        response = self.client.put(f"{BASE_URL}/{cart2.shopcart_id}", json=payload)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertTrue(response.is_json)
+        data = response.get_json()
+        self.assertEqual(data["status"], status.HTTP_409_CONFLICT)
+        self.assertEqual(data["error"], "Conflict")
+        self.assertIn("already exists", data["message"])
+
     def test_update_shopcart_not_found(self):
         """404 on updating a non-existent shopcart"""
         r = self.client.put(f"{BASE_URL}/0", json={"customer_id": 123})
@@ -459,6 +494,29 @@ class TestYourResourceService(TestCase):
             BASE_URL, data='{"customer_id": 777}', content_type="text/plain"
         )
         self.assertEqual(r.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_update_item_missing_body_treated_as_invalid_json(self):
+        """400 when item update body is missing (invalid JSON)"""
+        cart = self._create_shopcarts(1)[0]
+        item = ItemFactory(quantity=2, price=Decimal("4.00"))
+        r = self.client.post(
+            f"{BASE_URL}/{cart.shopcart_id}/items", json=item.serialize()
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        item_id = r.get_json()["item_id"]
+
+        # No JSON body but correct content type -> validate_item_data(None)
+        r = self.client.put(
+            f"{BASE_URL}/{cart.shopcart_id}/items/{item_id}",
+            data="",
+            content_type="application/json",
+        )
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(r.is_json)
+        data = r.get_json()
+        self.assertEqual(data["status"], status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(data["error"], "Bad Request")
+        self.assertEqual(data["message"], "Request body must be valid JSON.")
 
     ######################################################################
     #  C L E A R   C A R T   T E S T S

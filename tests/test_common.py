@@ -20,13 +20,15 @@ Common error handler tests
 from unittest import TestCase
 from unittest.mock import patch
 
+from werkzeug.exceptions import NotFound
+
 from wsgi import app
 from service.common import error_handlers, status
 from service.models import DataValidationError
 
 
 class TestErrorHandlers(TestCase):
-    """Unit tests for error handler helpers"""
+    """Unit tests for error handler behavior"""
 
     @classmethod
     def setUpClass(cls):
@@ -40,74 +42,77 @@ class TestErrorHandlers(TestCase):
         """Pop the shared application context"""
         cls.app_context.pop()
 
-    def test_request_validation_error_delegates_to_bad_request(self):
-        """It should pass DataValidationError handling to bad_request"""
+    def test_request_validation_error_returns_bad_request(self):
+        """DataValidationError should be rendered as a 400 with details"""
         error = DataValidationError("invalid payload")
-        with patch("service.common.error_handlers.bad_request") as mock_bad_request:
-            error_handlers.request_validation_error(error)
-            mock_bad_request.assert_called_once_with(error)
-
-    def test_bad_request_response_structure(self):
-        """It should format a proper bad request response"""
-        message = "invalid payload"
         with patch.object(error_handlers.app.logger, "warning") as mock_warning:
-            response, status_code = error_handlers.bad_request(message)
-            mock_warning.assert_called_once_with(message)
+            response, status_code = error_handlers.request_validation_error(error)
 
+        mock_warning.assert_called_once_with("invalid payload")
         data = response.get_json()
         self.assertEqual(status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(data["status"], status.HTTP_400_BAD_REQUEST)
         self.assertEqual(data["error"], "Bad Request")
-        self.assertEqual(data["message"], message)
+        self.assertEqual(data["message"], "invalid payload")
 
-    def test_not_found_response_structure(self):
-        """It should format a proper not found response"""
-        message = "resource missing"
+    def test_handle_http_exception_uses_description(self):
+        """HTTPExceptions should use their description as the message"""
+        http_error = NotFound(description="resource missing")
         with patch.object(error_handlers.app.logger, "warning") as mock_warning:
-            response, status_code = error_handlers.not_found(message)
-            mock_warning.assert_called_once_with(message)
+            response, status_code = error_handlers.handle_http_exception(http_error)
 
+        mock_warning.assert_called_once_with("resource missing")
         data = response.get_json()
         self.assertEqual(status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(data["status"], status.HTTP_404_NOT_FOUND)
         self.assertEqual(data["error"], "Not Found")
-        self.assertEqual(data["message"], message)
-
-    def test_method_not_supported_response_structure(self):
-        """It should format a proper method not allowed response"""
-        message = "PUT not allowed"
-        with patch.object(error_handlers.app.logger, "warning") as mock_warning:
-            response, status_code = error_handlers.method_not_supported(message)
-            mock_warning.assert_called_once_with(message)
-
-        data = response.get_json()
-        self.assertEqual(status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(data["status"], status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(data["error"], "Method not Allowed")
-        self.assertEqual(data["message"], message)
-
-    def test_mediatype_not_supported_response_structure(self):
-        """It should format a proper unsupported media type response"""
-        message = "text/plain unsupported"
-        with patch.object(error_handlers.app.logger, "warning") as mock_warning:
-            response, status_code = error_handlers.mediatype_not_supported(message)
-            mock_warning.assert_called_once_with(message)
-
-        data = response.get_json()
-        self.assertEqual(status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-        self.assertEqual(data["status"], status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-        self.assertEqual(data["error"], "Unsupported media type")
-        self.assertEqual(data["message"], message)
+        self.assertEqual(data["message"], "resource missing")
 
     def test_internal_server_error_response_structure(self):
-        """It should format a proper internal server error response"""
+        """Unexpected errors should return a 500 with the original message"""
         message = "unexpected failure"
         with patch.object(error_handlers.app.logger, "error") as mock_error:
             response, status_code = error_handlers.internal_server_error(message)
-            mock_error.assert_called_once_with(message)
 
+        mock_error.assert_called_once_with(message)
         data = response.get_json()
         self.assertEqual(status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(data["status"], status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(data["error"], "Internal Server Error")
         self.assertEqual(data["message"], message)
+
+    def test_api_request_validation_error_returns_json(self):
+        """RESTX DataValidationError handler should return a JSON payload"""
+        error = DataValidationError("invalid payload")
+        with patch.object(error_handlers.app.logger, "warning") as mock_warning:
+            payload, status_code = error_handlers.api_request_validation_error(error)
+
+        mock_warning.assert_called_once_with("invalid payload")
+        self.assertIsInstance(payload, dict)
+        self.assertEqual(status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(payload["status"], status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(payload["error"], "Bad Request")
+        self.assertEqual(payload["message"], "invalid payload")
+
+    def test_api_internal_server_error_returns_json(self):
+        """RESTX 500 handler should return a JSON payload"""
+        message = "unexpected failure"
+        with patch.object(error_handlers.app.logger, "error") as mock_error:
+            payload, status_code = error_handlers.api_internal_server_error(message)
+
+        mock_error.assert_called_once_with(message)
+        self.assertIsInstance(payload, dict)
+        self.assertEqual(status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(payload["status"], status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(payload["error"], "Internal Server Error")
+        self.assertEqual(payload["message"], message)
+
+    def test_make_error_payload_for_generic_exception(self):
+        """Generic exceptions should fall back to 500 with str(error)"""
+        error = ValueError("boom")
+        payload, code = error_handlers._make_error_payload(error)
+
+        self.assertEqual(code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(payload["status"], status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(payload["error"], "Internal Server Error")
+        self.assertEqual(payload["message"], "boom")
