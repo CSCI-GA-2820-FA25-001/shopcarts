@@ -63,19 +63,19 @@ Response:
 {
   "name": "ShopCarts Demo REST API Service",
   "version": "1.0",
-  "paths": "http://localhost:8080/shopcarts"
+  "paths": "http://localhost:8080/api/shopcarts"
 }
 ```
 ### <u>ShopCarts Endpoints and Expected Responses</u>
 ```http
-POST   /shopcarts
-GET    /shopcarts
-GET    /shopcarts/<shopcart_id>
-DELETE /shopcarts/<shopcart_id>
+POST   /api/shopcarts
+GET    /api/shopcarts
+GET    /api/shopcarts/<shopcart_id>
+DELETE /api/shopcarts/<shopcart_id>
 ```
 - **Create a Shopcart** (expects a json input) 
     ```http
-    POST /shopcarts
+    POST /api/shopcarts
     Content-Type: application/json
     ```
     Request Body:
@@ -93,7 +93,7 @@ DELETE /shopcarts/<shopcart_id>
     ```
 - **List Shopcarts**
      ```http
-    GET /shopcarts
+    GET /api/shopcarts
     ```
     Response 
     ```json
@@ -111,7 +111,7 @@ DELETE /shopcarts/<shopcart_id>
 - **Read a Shopcart**
     
     ```http
-    GET /shopcarts/<shopcart_id>
+    GET /api/shopcarts/<shopcart_id>
     ```
   Response (assuming input 855)
   ```json
@@ -122,11 +122,11 @@ DELETE /shopcarts/<shopcart_id>
   ```
 - **Delete a Shopcart** 
   ```http
-    DELETE /shopcarts/<shopcart_id>
-    ```
+    DELETE /api/shopcarts/<shopcart_id>
+  ```
 - **Update a Shopcart**
   ```http
-  PUT /shopcarts/<shopcart_id>
+  PUT /api/shopcarts/<shopcart_id>
   Content-Type: application/json
   ```
   Request Body:
@@ -149,15 +149,15 @@ DELETE /shopcarts/<shopcart_id>
 
 ### <u>Items Endpoints and Expected Responses</u>
 ```http
-POST   /shopcarts/<shopcart_id>/items
-GET    /shopcarts/<shopcart_id>/items
-GET    /shopcarts/<shopcart_id>/items/<item_id>
-PUT    /shopcarts/<shopcart_id>/items/<item_id>
+POST   /api/shopcarts/<shopcart_id>/items
+GET    /api/shopcarts/<shopcart_id>/items
+GET    /api/shopcarts/<shopcart_id>/items/<item_id>
+PUT    /api/shopcarts/<shopcart_id>/items/<item_id>
 ```
 
 - **Create an Item inside a Shopcart**
   ```http
-  POST /shopcarts/<shopcart_id>/items
+  POST /api/shopcarts/<shopcart_id>/items
   Content-Type: application/json
   ```
   Request Body:
@@ -181,7 +181,7 @@ PUT    /shopcarts/<shopcart_id>/items/<item_id>
 
 - **List All Items in a Shopcart**
   ```http
-  GET /shopcarts/<shopcart_id>/items
+  GET /api/shopcarts/<shopcart_id>/items
   ```
   Response:
   ```json
@@ -205,7 +205,7 @@ PUT    /shopcarts/<shopcart_id>/items/<item_id>
 
 - **Retrieve a Specific Item**
   ```http
-  GET /shopcarts/<shopcart_id>/items/<item_id>
+  GET /api/shopcarts/<shopcart_id>/items/<item_id>
   ```
   Response:
   ```json
@@ -219,12 +219,12 @@ PUT    /shopcarts/<shopcart_id>/items/<item_id>
   ```
 - **Delete an Item in a Shopcart**
     ```http
-  DELETE /shopcarts/<shopcart_id>/items/<item_id>
+  DELETE /api/shopcarts/<shopcart_id>/items/<item_id>
   ```
 
 - **Update an Item in a Shopcart**
   ```http
-  PUT /shopcarts/<shopcart_id>/items/<item_id>
+  PUT /api/shopcarts/<shopcart_id>/items/<item_id>
   Content-Type: application/json
   ```
   Request Body:

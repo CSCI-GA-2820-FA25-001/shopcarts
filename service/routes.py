@@ -42,8 +42,8 @@ def index():
             name="ShopCarts Demo REST API Service",
             version="1.0",
             # The host application owns misc routes like `/`, `/admin`, `/health`,
-            # while the Flask-RESTX Api manages the REST resources under `/shopcarts`.
-            paths="/shopcarts",
+            # while the Flask-RESTX Api manages the REST resources under `/api/shopcarts`.
+            paths="/api/shopcarts",
         ),
         status.HTTP_200_OK,
     )
@@ -74,8 +74,9 @@ def health():
 #   - The plain Flask routes above (`/`, `/admin`, `/health`) belong to
 #     the host application and are not part of the REST API surface.
 #   - The Flask-RESTX `Api` and namespaces below define the REST
-#     resources (e.g., `/shopcarts`) and should not register misc/host
-#     routes to avoid collisions with the root URL.
+#     resources (e.g., `/api/shopcarts`) under the `/api` prefix and
+#     should not register misc/host routes to avoid collisions with the
+#     root URL.
 ######################################################################
 api = Api(
     app,
@@ -83,6 +84,7 @@ api = Api(
     title="ShopCarts REST API Service",
     description="ShopCarts service with Swagger (Flask-RESTX)",
     doc="/apidocs",
+    prefix="/api",
 )
 
 # Namespaces
@@ -415,7 +417,7 @@ class ShopcartClear(Resource):
     """Clear all items from a ShopCart (idempotent)"""
 
     def post(self, shopcart_id: int):
-        """POST /shopcarts/<id>/clear — remove all items from a cart (idempotent)."""
+        """POST /api/shopcarts/<id>/clear — remove all items from a cart (idempotent)."""
         app.logger.info("Request to clear shopcart id=%s", shopcart_id)
 
         cart = ShopCarts.find(shopcart_id)
