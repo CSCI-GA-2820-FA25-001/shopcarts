@@ -1,4 +1,6 @@
 $(function () {
+  const API_BASE = "/api/shopcarts";
+
   function flash(message) {
     $("#flash_message").empty().text(message || "");
   }
@@ -34,7 +36,7 @@ $(function () {
 
     $.ajax({
       type: "POST",
-      url: "/shopcarts",
+      url: API_BASE,
       contentType: "application/json",
       data: JSON.stringify({ customer_id: customer_id })
     })
@@ -51,7 +53,7 @@ $(function () {
     const id = $("#shopcart_id").val();
     $("#flash_message").empty();
 
-    $.ajax({ type: "GET", url: `/shopcarts/${id}` })
+    $.ajax({ type: "GET", url: `${API_BASE}/${id}` })
       .done(function (res) {
         update_cart_form(res);
         flash("Success");
@@ -69,7 +71,7 @@ $(function () {
 
     $.ajax({
       type: "PUT",
-      url: `/shopcarts/${id}`,
+      url: `${API_BASE}/${id}`,
       contentType: "application/json",
       data: JSON.stringify({ customer_id: customer_id })
     })
@@ -87,7 +89,7 @@ $(function () {
     $("#flash_message").empty();
 
     if (!id) return;
-    $.ajax({ type: "DELETE", url: `/shopcarts/${id}` })
+    $.ajax({ type: "DELETE", url: `${API_BASE}/${id}` })
       .done(function () {
         clear_cart_form();
         flash("Success");
@@ -103,7 +105,7 @@ $(function () {
     if (customer_id) qs = `customer_id=${customer_id}`;
     $("#flash_message").empty();
 
-    $.ajax({ type: "GET", url: `/shopcarts?${qs}` })
+    $.ajax({ type: "GET", url: `${API_BASE}?${qs}` })
       .done(function (res) {
         $("#shopcarts_results").empty();
         let table = '<table class="table table-striped" cellpadding="10">';
@@ -128,7 +130,7 @@ $(function () {
     const id = $("#shopcart_id").val();
     $("#flash_message").empty();
     if (!id) return;
-    $.ajax({ type: "POST", url: `/shopcarts/${id}/clear` })
+    $.ajax({ type: "POST", url: `${API_BASE}/${id}/clear` })
       .done(function (res) {
         update_cart_form(res);
         flash("Success");
@@ -152,7 +154,7 @@ $(function () {
     $("#flash_message").empty();
     $.ajax({
       type: "POST",
-      url: `/shopcarts/${sid}/items`,
+      url: `${API_BASE}/${sid}/items`,
       contentType: "application/json",
       data: JSON.stringify({ product_id, quantity, price })
     })
@@ -169,7 +171,7 @@ $(function () {
     const sid = getItemCartId();
     const item_id = $("#item_id").val();
     $("#flash_message").empty();
-    $.ajax({ type: "GET", url: `/shopcarts/${sid}/items/${item_id}` })
+    $.ajax({ type: "GET", url: `${API_BASE}/${sid}/items/${item_id}` })
       .done(function (res) {
         update_item_form(res);
         flash("Success");
@@ -188,7 +190,7 @@ $(function () {
     $("#flash_message").empty();
     $.ajax({
       type: "PUT",
-      url: `/shopcarts/${sid}/items/${item_id}`,
+      url: `${API_BASE}/${sid}/items/${item_id}`,
       contentType: "application/json",
       data: JSON.stringify({ quantity, unit_price })
     })
@@ -206,7 +208,7 @@ $(function () {
     const item_id = $("#item_id").val();
     $("#flash_message").empty();
     if (!sid || !item_id) return;
-    $.ajax({ type: "DELETE", url: `/shopcarts/${sid}/items/${item_id}` })
+    $.ajax({ type: "DELETE", url: `${API_BASE}/${sid}/items/${item_id}` })
       .done(function () {
         clear_item_form();
         flash("Success");
@@ -219,7 +221,7 @@ $(function () {
   $("#list-items-btn").click(function () {
     const sid = getItemCartId();
     $("#flash_message").empty();
-    $.ajax({ type: "GET", url: `/shopcarts/${sid}/items` })
+    $.ajax({ type: "GET", url: `${API_BASE}/${sid}/items` })
       .done(function (res) {
         $("#items_results").empty();
         let table = '<table class="table table-striped" cellpadding="10">';
