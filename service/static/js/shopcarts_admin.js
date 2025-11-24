@@ -40,7 +40,7 @@ $(function () {
     })
       .done(function (res) {
         update_cart_form(res);
-        flash("Shopcart created");
+        flash("Success");
       })
       .fail(function (res) {
         flash((res.responseJSON && res.responseJSON.message) || "Create failed");
@@ -75,7 +75,7 @@ $(function () {
     })
       .done(function (res) {
         update_cart_form(res);
-        flash("Updated");
+        flash("Success");
       })
       .fail(function (res) {
         flash((res.responseJSON && res.responseJSON.message) || "Update failed");
@@ -90,7 +90,7 @@ $(function () {
     $.ajax({ type: "DELETE", url: `/shopcarts/${id}` })
       .done(function () {
         clear_cart_form();
-        flash("Shopcart deleted");
+        flash("Success");
       })
       .fail(function () {
         flash("Server error");
@@ -131,7 +131,7 @@ $(function () {
     $.ajax({ type: "POST", url: `/shopcarts/${id}/clear` })
       .done(function (res) {
         update_cart_form(res);
-        flash("Cart cleared");
+        flash("Success");
       })
       .fail(function (res) {
         flash((res.responseJSON && res.responseJSON.message) || "Clear failed");
@@ -158,7 +158,7 @@ $(function () {
     })
       .done(function (res) {
         update_item_form(res);
-        flash("Item created");
+        flash("Success");
       })
       .fail(function (res) {
         flash((res.responseJSON && res.responseJSON.message) || "Create item failed");
@@ -194,7 +194,7 @@ $(function () {
     })
       .done(function (res) {
         update_item_form(res);
-        flash("Item updated");
+        flash("Success");
       })
       .fail(function (res) {
         flash((res.responseJSON && res.responseJSON.message) || "Update item failed");
@@ -209,7 +209,7 @@ $(function () {
     $.ajax({ type: "DELETE", url: `/shopcarts/${sid}/items/${item_id}` })
       .done(function () {
         clear_item_form();
-        flash("Item deleted");
+        flash("Success");
       })
       .fail(function () {
         flash("Server error");

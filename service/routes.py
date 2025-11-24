@@ -50,6 +50,7 @@ def index():
 # ADMIN UI
 ######################################################################
 
+
 @app.route("/admin", methods=["GET"])
 def admin_ui():
     """Serve the single-page admin UI"""
