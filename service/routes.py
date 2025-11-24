@@ -25,7 +25,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from flask import jsonify, request, abort, render_template
 from flask import current_app as app  # Import Flask application
-from flask_restx import Api, Namespace, Resource
+from flask_restx import Api, Namespace, Resource, fields
 from service.models import ShopCarts, Items
 from service.common import status  # HTTP Status Codes
 
@@ -93,6 +93,83 @@ api.add_namespace(shopcarts_ns)
 
 
 ######################################################################
+#  S W A G G E R   D A T A   M O D E L S
+######################################################################
+
+# Define the model so that the docs reflect what can be sent
+shopcart_create_model = shopcarts_ns.model(
+    "ShopcartCreate",
+    {
+        "customer_id": fields.Integer(
+            required=True, description="The customer identifier"
+        ),
+    },
+)
+
+shopcart_model = shopcarts_ns.inherit(
+    "Shopcart",
+    shopcart_create_model,
+    {
+        "shopcart_id": fields.Integer(
+            readOnly=True,
+            description="The unique identifier assigned internally by service",
+        ),
+    },
+)
+
+# Item Models
+item_create_model = shopcarts_ns.model(
+    "ItemCreate",
+    {
+        "product_id": fields.Integer(
+            required=True, description="The product identifier"
+        ),
+        "quantity": fields.Integer(
+            required=True, description="The quantity of the product", min=1
+        ),
+        "price": fields.Float(
+            required=True, description="The total price for this item"
+        ),
+    },
+)
+
+item_model = shopcarts_ns.model(
+    "Item",
+    {
+        "item_id": fields.Integer(
+            readOnly=True,
+            description="The unique identifier assigned internally by service",
+        ),
+        "shopcart_id": fields.Integer(
+            readOnly=True, description="The shopcart identifier this item belongs to"
+        ),
+        "product_id": fields.Integer(
+            required=True, description="The product identifier"
+        ),
+        "quantity": fields.Integer(
+            required=True, description="The quantity of the product", min=1
+        ),
+        "price": fields.String(
+            readOnly=True, description="The total price for this item (as string)"
+        ),
+    },
+)
+
+item_update_model = shopcarts_ns.model(
+    "ItemUpdate",
+    {
+        "quantity": fields.Integer(
+            required=True, description="The new quantity for the item", min=1
+        ),
+        "unit_price": fields.Float(
+            required=False,
+            description="Unit price (optional, used to recalculate total price)",
+        ),
+    },
+)
+
+
+######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
@@ -104,6 +181,8 @@ api.add_namespace(shopcarts_ns)
 class ShopcartCollectionResources(Resource):
     """Handles interactions with the ShopCarts collection"""
 
+    @shopcarts_ns.doc("list_shopcarts")
+    @shopcarts_ns.marshal_list_with(shopcart_model)
     def get(self):
         """Returns filtered list of Shopcarts"""
         app.logger.info("Request for shopcart list")
@@ -122,6 +201,10 @@ class ShopcartCollectionResources(Resource):
     ######################################################################
     # CREATE A SHOPCART
     ######################################################################
+    @shopcarts_ns.doc("create_shopcart")
+    @shopcarts_ns.response(400, "The posted data was not valid")
+    @shopcarts_ns.expect(shopcart_create_model, validate=False)
+    @shopcarts_ns.marshal_with(shopcart_model, code=status.HTTP_201_CREATED)
     def post(self):
         """
         Create a ShopCart
@@ -156,9 +239,13 @@ class ShopcartCollectionResources(Resource):
 # READ A SHOPCART
 ######################################################################
 @shopcarts_ns.route("/<int:shopcart_id>")
+@shopcarts_ns.param("shopcart_id", "The Shopcart identifier")
 class ShopcartResource(Resource):
     """Handles a single ShopCart resource"""
 
+    @shopcarts_ns.doc("get_shopcart")
+    @shopcarts_ns.response(404, "Shopcart not found")
+    @shopcarts_ns.marshal_with(shopcart_model)
     def get(self, shopcart_id):
         """
         Retrieve a single Shopcart
@@ -181,6 +268,11 @@ class ShopcartResource(Resource):
     ######################################################################
     # UPDATE AN EXISTING SHOPCART
     ######################################################################
+    @shopcarts_ns.doc("update_shopcart")
+    @shopcarts_ns.response(404, "Shopcart not found")
+    @shopcarts_ns.response(400, "The posted Shopcart data was not valid")
+    @shopcarts_ns.expect(shopcart_create_model, validate=False)
+    @shopcarts_ns.marshal_with(shopcart_model)
     def put(self, shopcart_id):
         """
         Update a Shopcart
@@ -212,6 +304,8 @@ class ShopcartResource(Resource):
     ######################################################################
     # DELETE A SHOPCART
     ######################################################################
+    @shopcarts_ns.doc("delete_shopcart")
+    @shopcarts_ns.response(204, "Shopcart deleted")
     def delete(self, shopcart_id):
         """
         Delete a ShopCart
@@ -294,9 +388,14 @@ def compute_new_price(item, quantity, unit_price):
 # READ/UPDATE/DELETE AN ITEM
 ######################################################################
 @shopcarts_ns.route("/<int:shopcart_id>/items/<int:item_id>")
+@shopcarts_ns.param("shopcart_id", "The Shopcart identifier")
+@shopcarts_ns.param("item_id", "The Item identifier")
 class ItemResource(Resource):
     """Retrieve/Update/Delete a single Item in a ShopCart"""
 
+    @shopcarts_ns.doc("get_item")
+    @shopcarts_ns.response(404, "Shopcart or Item not found")
+    @shopcarts_ns.marshal_with(item_model)
     def get(self, shopcart_id, item_id):
         """Retrieve the details for an item in a shopcart"""
         app.logger.info(
@@ -323,6 +422,11 @@ class ItemResource(Resource):
         app.logger.info("Returning item [%s] from shopcart [%s]", item_id, shopcart_id)
         return result, status.HTTP_200_OK
 
+    @shopcarts_ns.doc("update_item")
+    @shopcarts_ns.response(404, "Shopcart or Item not found")
+    @shopcarts_ns.response(400, "The posted Item data was not valid")
+    @shopcarts_ns.expect(item_update_model, validate=False)
+    @shopcarts_ns.marshal_with(item_model)
     def put(self, shopcart_id, item_id):
         """Update the quantity or price for an item in a shopcart"""
         app.logger.info(
@@ -366,6 +470,9 @@ class ItemResource(Resource):
         )
         return response, status.HTTP_200_OK
 
+    @shopcarts_ns.doc("delete_item")
+    @shopcarts_ns.response(204, "Item deleted")
+    @shopcarts_ns.response(404, "Shopcart or Item not found")
     def delete(self, shopcart_id, item_id):
         """
         Delete an Item from a ShopCart
@@ -413,9 +520,13 @@ class ItemResource(Resource):
 # CLEAR SHOP CART
 ######################################################################
 @shopcarts_ns.route("/<int:shopcart_id>/clear")
+@shopcarts_ns.param("shopcart_id", "The Shopcart identifier")
 class ShopcartClear(Resource):
     """Clear all items from a ShopCart (idempotent)"""
 
+    @shopcarts_ns.doc("clear_shopcart")
+    @shopcarts_ns.response(404, "Shopcart not found")
+    @shopcarts_ns.marshal_with(shopcart_model)
     def post(self, shopcart_id: int):
         """POST /api/shopcarts/<id>/clear — remove all items from a cart (idempotent)."""
         app.logger.info("Request to clear shopcart id=%s", shopcart_id)
@@ -442,9 +553,13 @@ class ShopcartClear(Resource):
 # LIST AN ITEM
 ######################################################################
 @shopcarts_ns.route("/<int:shopcart_id>/items")
+@shopcarts_ns.param("shopcart_id", "The Shopcart identifier")
 class ItemsCollection(Resource):
     """List and Create Items within a ShopCart"""
 
+    @shopcarts_ns.doc("list_items")
+    @shopcarts_ns.response(404, "Shopcart not found")
+    @shopcarts_ns.marshal_list_with(item_model)
     def get(self, shopcart_id):
         """List all items in a shopcart"""
         app.logger.info("Request to list items for shopcart [%s]", shopcart_id)
@@ -469,6 +584,11 @@ class ItemsCollection(Resource):
     ######################################################################
     # CREATE AN ITEM
     ######################################################################
+    @shopcarts_ns.doc("create_item")
+    @shopcarts_ns.response(404, "Shopcart not found")
+    @shopcarts_ns.response(400, "The posted data was not valid")
+    @shopcarts_ns.expect(item_create_model, validate=False)
+    @shopcarts_ns.marshal_with(item_model, code=status.HTTP_201_CREATED)
     def post(self, shopcart_id):
         """Create an Item inside a ShopCart"""
         app.logger.info("Request to Create an Item inside a ShopCart...")
