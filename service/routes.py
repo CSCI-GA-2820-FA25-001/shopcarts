@@ -175,6 +175,16 @@ item_update_model = shopcarts_ns.model(
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
 
+# Define a parser for query parameters
+shopcart_args = shopcarts_ns.parser()
+shopcart_args.add_argument(
+    "customer_id",
+    type=int,
+    location="args",
+    required=False,
+    help="List Shopcarts by Customer ID",
+)
+
 
 ######################################################################
 # LIST ALL SHOPCARTS
@@ -184,12 +194,14 @@ class ShopcartCollectionResources(Resource):
     """Handles interactions with the ShopCarts collection"""
 
     @shopcarts_ns.doc("list_shopcarts")
+    @shopcarts_ns.expect(shopcart_args, validate=True)
     @shopcarts_ns.marshal_list_with(shopcart_model)
     def get(self):
         """Returns filtered list of Shopcarts"""
         app.logger.info("Request for shopcart list")
 
-        customer_id = request.args.get("customer_id", type=int)
+        args = shopcart_args.parse_args()
+        customer_id = args["customer_id"]
 
         if customer_id is not None:
             app.logger.info("Filtering shopcarts by customer_id=%s", customer_id)
