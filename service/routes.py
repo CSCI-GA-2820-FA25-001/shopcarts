@@ -23,9 +23,16 @@ and Delete ShopCart
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from flask import jsonify, request, abort, render_template
-from flask import current_app as app  # Import Flask application
 from flask_restx import Api, Namespace, Resource, fields
+from flask import (
+    jsonify,
+    request,
+    abort,
+    render_template,
+    Blueprint,
+    current_app as app,
+)
+
 from service.models import ShopCarts, Items
 from service.common import status  # HTTP Status Codes
 
@@ -80,14 +87,19 @@ def health():
 #     should not register misc/host routes to avoid collisions with the
 #     root URL.
 ######################################################################
+# Create blueprint for API
+api_blueprint = Blueprint("api", __name__, url_prefix="/api")
+
 api = Api(
-    app,
+    api_blueprint,
     version="1.0.0",
     title="ShopCarts REST API Service",
     description="ShopCarts service with Swagger (Flask-RESTX)",
-    doc="/apidocs",
-    prefix="/api",
+    doc="/",  # Swagger UI will be at /api/
 )
+
+# Register blueprint with app
+app.register_blueprint(api_blueprint)
 
 # Namespaces
 shopcarts_ns = Namespace("shopcarts", path="/shopcarts")
