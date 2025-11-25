@@ -23,10 +23,16 @@ and Delete ShopCart
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from flask import jsonify, request, abort, render_template
-from flask import current_app as app  # Import Flask application
 from flask_restx import Api, Namespace, Resource, fields
-from flask import Blueprint
+from flask import (
+    jsonify,
+    request,
+    abort,
+    render_template,
+    Blueprint,
+    current_app as app,
+)
+
 from service.models import ShopCarts, Items
 from service.common import status  # HTTP Status Codes
 
