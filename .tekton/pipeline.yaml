@@ -1,0 +1,111 @@
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: shopcarts-ci-cd
+spec:
+  description: >
+    CI/CD pipeline for the shopcarts microservice that clones the repo,
+    runs lint and unit tests, builds and deploys the image to OpenShift,
+    and finally executes BDD tests with Behave.
+  params:
+    - name: GIT_REPO
+      type: string
+      description: Git repository URL for the shopcarts service.
+    - name: GIT_REF
+      type: string
+      description: Git branch, tag, or SHA to build.
+      default: master
+    - name: APP_NAME
+      type: string
+      description: >
+        Name of the Kubernetes or OpenShift Deployment and Service.
+      default: shopcarts
+    - name: IMAGE
+      type: string
+      description: >
+        Fully qualified image reference to build and deploy.
+    - name: BASE_URL
+      type: string
+      description: >
+        External URL for the running shopcarts service used by Behave tests.
+  workspaces:
+    - name: shared-workspace
+      description: Shared workspace for source code and artifacts.
+  tasks:
+    - name: clone
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.GIT_REPO)
+        - name: revision
+          value: $(params.GIT_REF)
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+
+    - name: lint
+      runAfter:
+        - clone
+      taskRef:
+        name: python-lint
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: test
+      runAfter:
+        - clone
+      taskRef:
+        name: python-test
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-image
+      runAfter:
+        - lint
+        - test
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: deploy
+      runAfter:
+        - build-image
+      taskRef:
+        name: deploy-image
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: APP_NAME
+          value: $(params.APP_NAME)
+        - name: IMAGE
+          value: $(params.IMAGE)
+
+    - name: bdd-tests
+      runAfter:
+        - deploy
+      taskRef:
+        name: behave-tests
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: BASE_URL
+          value: $(params.BASE_URL)

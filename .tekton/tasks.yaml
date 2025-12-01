@@ -1,0 +1,167 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: python-lint
+spec:
+  description: >
+    Run flake8 linting on the shopcarts service.
+  workspaces:
+    - name: source
+      description: Source code workspace cloned from Git.
+  steps:
+    - name: flake8
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Installing flake8..."
+        python -m pip install --upgrade pip
+        python -m pip install flake8
+
+        echo "Running flake8 on service/ and tests/..."
+        flake8 service tests
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: python-test
+spec:
+  description: >
+    Run pytest test suite with coverage for the shopcarts service.
+  workspaces:
+    - name: source
+      description: Source code workspace cloned from Git.
+  steps:
+    - name: pytest
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Upgrading pip and installing dependencies..."
+        python -m pip install --upgrade pip
+
+        if [ -f "poetry.lock" ]; then
+          echo "Detected poetry.lock. Exporting dependencies..."
+          python -m pip install "poetry>=1.7"
+          poetry export -f requirements.txt \
+            --output requirements.txt \
+            --without-hashes
+        elif [ -f "Pipfile" ]; then
+          echo "Detected Pipfile. Exporting dependencies with pipenv..."
+          python -m pip install "pipenv>=2023.0.0"
+          pipenv lock -r > requirements.txt
+        fi
+
+        if [ -f "requirements.txt" ]; then
+          echo "Installing dependencies from requirements.txt..."
+          python -m pip install -r requirements.txt
+        fi
+
+        python -m pip install pytest pytest-cov pytest-pspec
+
+        echo "Running pytest with coverage..."
+        pytest --pspec --cov=service --cov-fail-under=95 --disable-warnings
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-image
+spec:
+  description: >
+    Deploy the built image to the OpenShift cluster.
+  workspaces:
+    - name: source
+      description: Source code workspace for Kubernetes manifests.
+  params:
+    - name: APP_NAME
+      type: string
+      description: Name of the Deployment and Service to update.
+    - name: IMAGE
+      type: string
+      description: Image to deploy.
+  steps:
+    - name: oc-deploy
+      image: quay.io/openshift/origin-cli:4.12
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Applying Kubernetes manifests from k8s/ if present..."
+        if [ -d "k8s" ]; then
+          oc apply -f k8s/
+        else
+          echo "WARNING: k8s/ directory not found. Skipping apply step."
+        fi
+
+        echo "Updating deployment image..."
+        oc set image deployment/$(params.APP_NAME) \
+          $(params.APP_NAME)=$(params.IMAGE) \
+          -n $(context.pipelineRun.namespace)
+
+        echo "Waiting for rollout to finish..."
+        oc rollout status deployment/$(params.APP_NAME) \
+          -n $(context.pipelineRun.namespace)
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: behave-tests
+spec:
+  description: >
+    Run BDD tests using Behave against the deployed route.
+  workspaces:
+    - name: source
+      description: Source code workspace for the features folder.
+  params:
+    - name: BASE_URL
+      type: string
+      description: Base URL of the running shopcarts service route.
+  steps:
+    - name: run-behave
+      image: python:3.11-slim
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: BASE_URL
+          value: $(params.BASE_URL)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Upgrading pip and installing dependencies..."
+        python -m pip install --upgrade pip
+
+        if [ -f "poetry.lock" ]; then
+          echo "Detected poetry.lock. Exporting dependencies..."
+          python -m pip install "poetry>=1.7"
+          poetry export -f requirements.txt \
+            --output requirements.txt \
+            --without-hashes
+        elif [ -f "Pipfile" ]; then
+          echo "Detected Pipfile. Exporting dependencies with pipenv..."
+          python -m pip install "pipenv>=2023.0.0"
+          pipenv lock -r > requirements.txt
+        fi
+
+        if [ -f "requirements.txt" ]; then
+          echo "Installing dependencies from requirements.txt..."
+          python -m pip install -r requirements.txt
+        fi
+
+        echo "Installing Behave..."
+        python -m pip install behave
+
+        if [ -d "features" ]; then
+          cd features
+        fi
+
+        echo "Running Behave BDD tests against ${BASE_URL}..."
+        behave
