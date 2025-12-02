@@ -15,7 +15,8 @@ spec:
     - name: source
 
   tasks:
-    - name: clone-source
+    # Clone repository from GitHub into shared workspace
+    - name: clone
       taskRef:
         name: git-clone
         kind: Task
@@ -29,3 +30,62 @@ spec:
       workspaces:
         - name: output
           workspace: source
+
+    # Run linting checks (flake8 and pylint)
+    # TODO: Task definition 'lint-task' needs to be created
+    - name: lint
+      runAfter: ["clone"]
+      taskRef:
+        name: lint-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: source
+
+    # Run unit tests with pytest
+    # TODO: Task definition 'test-task' needs to be created
+    - name: test
+      runAfter: ["clone"]
+      taskRef:
+        name: test-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: source
+
+    # Build Docker image from source code
+    # TODO: Task definition 'build-image-task' needs to be created
+    - name: build-image
+      runAfter: ["clone", "lint", "test"]
+      taskRef:
+        name: build-image-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: source
+
+    # Deploy application to Kubernetes cluster
+    # TODO: Task definition 'deploy-task' needs to be created
+    - name: deploy
+      runAfter: ["build-image"]
+      taskRef:
+        name: deploy-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: source
+
+    # Run BDD tests against deployed application
+    # TODO: Task definition 'bdd-task' needs to be created
+    # TODO: BASE_URL environment variable needs to be set by EventListener or PipelineRun
+    - name: bdd-tests
+      runAfter: ["deploy"]
+      taskRef:
+        name: bdd-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: source
+      env:
+        - name: BASE_URL
+          value: ""  # TODO: Set to actual service route URL
