@@ -133,7 +133,7 @@ def step_impl(context: Any, element_name: str) -> None:
     element = WebDriverWait(context.driver, context.wait_seconds).until(
         expected_conditions.presence_of_element_located((By.ID, element_id))
     )
-    context.clipboard = element.get_attribute("value")
+    context.clipboard = element.get_attribute("value").strip()
 
 
 @when('I paste the "{element_name}" field')
@@ -202,3 +202,11 @@ def step_impl(context: Any, text: str) -> None:
 def step_impl(context: Any, text: str) -> None:
     element = context.driver.find_element(By.ID, "items_results")
     assert text not in element.text
+
+
+@when('I click the "{tab_name}" tab')
+def step_impl(context, tab_name):
+    tab_id_map = {"Shopcarts": "tab-shopcarts", "Items": "tab-items"}
+    selector = f'a[href="#{tab_id_map[tab_name]}"]'
+    element = context.driver.find_element(By.CSS_SELECTOR, selector)
+    element.click()
