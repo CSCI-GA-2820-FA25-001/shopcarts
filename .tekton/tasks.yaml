@@ -1,0 +1,238 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: clone
+spec:
+  description: >
+    Clone the Git repository into the shared workspace.
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+    - name: revision
+      type: string
+      description: Branch, tag, or commit SHA to check out
+      default: main
+  workspaces:
+    - name: source
+      description: Workspace where the source code will be cloned.
+  steps:
+    - name: git-clone
+      image: alpine/git:latest
+      script: |
+        #!/usr/bin/env sh
+        set -eu
+        echo "Cloning $(params.repo-url) (revision $(params.revision)) into $(workspaces.source.path)"
+        rm -rf "$(workspaces.source.path)"/*
+        git clone "$(params.repo-url)" \
+          --branch "$(params.revision)" \
+          --single-branch \
+          "$(workspaces.source.path)"
+        cd "$(workspaces.source.path)"
+        git rev-parse HEAD
+
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: lint
+spec:
+  description: >
+    Run Python linters (flake8 + pylint) against the service and tests.
+  params:
+    - name: python-image
+      type: string
+      default: rofrano/pipeline-selenium:latest
+      description: >
+        Image with Python, pipenv, and tools needed for linting and tests.
+  workspaces:
+    - name: source
+      description: Source code workspace shared across the pipeline.
+  steps:
+    - name: lint
+      image: $(params.python-image)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Installing Python dependencies via pipenv..."
+        python -m pip install --upgrade pip pipenv
+        pipenv install --system --dev
+
+        echo "Running flake8..."
+        flake8 service tests --count --max-line-length=127 --statistics
+
+        echo "Running pylint..."
+        pylint service tests --max-line-length=127
+
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: test
+spec:
+  description: >
+    Run unit and integration tests with pytest and coverage.
+  params:
+    - name: python-image
+      type: string
+      default: rofrano/pipeline-selenium:latest
+      description: >
+        Image with Python, pipenv, and test tools (pytest, coverage, etc.).
+  workspaces:
+    - name: source
+      description: Source code workspace shared across the pipeline.
+  steps:
+    - name: pytest
+      image: $(params.python-image)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Installing Python dependencies via pipenv..."
+        python -m pip install --upgrade pip pipenv
+        pipenv install --system --dev
+
+        echo "Running pytest with coverage..."
+        export RETRY_COUNT=1
+        pytest --pspec --cov=service --cov-fail-under=95 --disable-warnings
+
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-image
+spec:
+  description: >
+    Build and push the ShopCarts container image using Buildah.
+  params:
+    - name: image
+      type: string
+      description: Fully-qualified image name (including tag) to build and push.
+      default: cluster-registry:5000/shopcarts:1.0
+    - name: dockerfile
+      type: string
+      description: Path to the Dockerfile relative to the repo root.
+      default: ./Dockerfile
+    - name: context
+      type: string
+      description: Build context directory.
+      default: .
+    - name: builder-image
+      type: string
+      description: Buildah image to use for building and pushing.
+      default: quay.io/buildah/stable:latest
+    - name: storage-driver
+      type: string
+      description: Storage driver for Buildah.
+      default: vfs
+  workspaces:
+    - name: source
+      description: Workspace containing the application source code.
+  steps:
+    - name: build
+      image: $(params.builder-image)
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: STORAGE_DRIVER
+          value: $(params.storage-driver)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "Building image $(params.image) from $(params.dockerfile) with Buildah..."
+        buildah bud \
+          --format docker \
+          --tls-verify=false \
+          -f "$(params.dockerfile)" \
+          -t "$(params.image)" \
+          "$(params.context)"
+    - name: push
+      image: $(params.builder-image)
+      env:
+        - name: STORAGE_DRIVER
+          value: $(params.storage-driver)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "Pushing image $(params.image)..."
+        buildah push \
+          --tls-verify=false \
+          "$(params.image)" \
+          "docker://$(params.image)"
+
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy
+spec:
+  description: >
+    Deploy the ShopCarts service (and supporting resources) to the cluster.
+  params:
+    - name: k8s-dir
+      type: string
+      description: Path (relative to repo root) containing Kubernetes manifests.
+      default: k8s
+    - name: namespace
+      type: string
+      description: Kubernetes namespace to deploy into.
+      default: default
+  workspaces:
+    - name: source
+      description: Source code workspace with the k8s/ folder.
+  steps:
+    - name: kubectl-apply
+      image: bitnami/kubectl:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Applying Kubernetes manifests from $(params.k8s-dir) into namespace $(params.namespace)..."
+        kubectl apply -R -f "$(params.k8s-dir)" -n "$(params.namespace)"
+
+        echo "Showing deployed objects:"
+        kubectl get pods,svc,ingress -n "$(params.namespace)" || true
+
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: bdd-tests
+spec:
+  description: >
+    Run Behave BDD tests against the deployed ShopCarts service via the cluster Route.
+  params:
+    - name: python-image
+      type: string
+      default: rofrano/pipeline-selenium:latest
+      description: Image that contains Python, Behave, Selenium, and browsers.
+    - name: base-url
+      type: string
+      description: Base URL for the deployed service (e.g., OpenShift Route).
+  workspaces:
+    - name: source
+      description: Source code workspace containing the Behave features.
+  steps:
+    - name: behave
+      image: $(params.python-image)
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: BASE_URL
+          value: $(params.base-url)
+        - name: WAIT_SECONDS
+          value: "30"
+        - name: DRIVER
+          value: "chrome"
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Installing Python dependencies via pipenv..."
+        python -m pip install --upgrade pip pipenv
+        pipenv install --system --dev
+
+        echo "Running Behave BDD tests against ${BASE_URL}..."
+        behave -f progress2
