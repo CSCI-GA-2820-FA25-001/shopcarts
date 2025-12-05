@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cd-pipeline
+spec:
+  description: Minimal placeholder pipeline for ShopCarts; tasks to be added later.
+  params:
+    - name: APP_NAME
+      description: Application name used for Kubernetes resources
+      type: string
+    - name: GIT_REPO
+      description: Git repository to clone
+      type: string
+    - name: IMAGE_NAME
+      description: Fully qualified image name including tag
+      type: string
+    - name: GIT_REVISION
+      description: Git revision to build
+      type: string
+      default: main
+  workspaces:
+    - name: pipeline-workspace
+      description: Shared workspace for source, manifests, and build context
+  tasks: []
