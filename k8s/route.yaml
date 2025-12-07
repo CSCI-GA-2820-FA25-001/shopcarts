@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: shopcarts
+  labels:
+    app: shopcarts
+spec:
+  to:
+    kind: Service
+    name: shopcarts
+    weight: 100
+  port:
+    targetPort: http
+  wildcardPolicy: None
