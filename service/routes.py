@@ -88,18 +88,14 @@ def health():
 #     root URL.
 ######################################################################
 # Create blueprint for API
-api_blueprint = Blueprint("api", __name__, url_prefix="/api")
-
 api = Api(
-    api_blueprint,
+    app,
     version="1.0.0",
     title="ShopCarts REST API Service",
     description="ShopCarts service with Swagger (Flask-RESTX)",
-    doc="/",  # Swagger UI will be at /api/
+    prefix="/api",
+    doc="/apidocs/",  # <--- Swagger UI will now load correctly
 )
-
-# Register blueprint with app
-app.register_blueprint(api_blueprint)
 
 # Namespaces
 shopcarts_ns = Namespace("shopcarts", path="/shopcarts")
