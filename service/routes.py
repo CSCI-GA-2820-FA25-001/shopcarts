@@ -29,7 +29,6 @@ from flask import (
     request,
     abort,
     render_template,
-    Blueprint,
     current_app as app,
 )
 
