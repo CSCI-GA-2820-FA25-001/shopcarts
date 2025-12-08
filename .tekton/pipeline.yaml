@@ -12,7 +12,7 @@ spec:
       description: Git repository to clone
       type: string
     - name: IMAGE_NAME
-      description: Fully qualified image name including tag
+      description: Fully qualified image repository
       type: string
     - name: GIT_REVISION
       description: Git revision to build
@@ -21,6 +21,8 @@ spec:
   workspaces:
     - name: pipeline-workspace
       description: Shared workspace for source, manifests, and build context
+    - name: dockerconfig
+      description: Docker registry config (config.json) for kaniko
 
   tasks:
     # Clone repository into shared workspace
@@ -38,3 +40,23 @@ spec:
       workspaces:
         - name: output
           workspace: pipeline-workspace
+
+    # Build and push Docker image once using Tekton Hub kaniko Task,
+    # tagging it with both the Git commit SHA and latest.
+    - name: build-image
+      runAfter:
+        - clone
+      taskRef:
+        name: kaniko
+        kind: Task
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
+        - name: EXTRA_ARGS
+          value:
+            - --destination=$(params.IMAGE_NAME):latest
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+        - name: dockerconfig
+          workspace: dockerconfig
