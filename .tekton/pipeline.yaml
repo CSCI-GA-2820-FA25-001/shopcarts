@@ -41,11 +41,22 @@ spec:
         - name: output
           workspace: pipeline-workspace
 
+    # Run pylint linting on the service code
+    - name: lint
+      runAfter:
+        - clone
+      taskRef:
+        name: pylint
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+
     # Build and push Docker image once using Tekton Hub kaniko Task,
     # tagging it with both the Git commit SHA and latest.
     - name: build-image
       runAfter:
-        - clone
+        - lint
       taskRef:
         name: kaniko
         kind: Task
