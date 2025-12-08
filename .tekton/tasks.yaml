@@ -296,3 +296,54 @@ spec:
 
         echo "***** Running Tests *****"
         behave
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: bdd-behave-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Testing
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: python, bdd, behave
+    tekton.dev/displayName: "bdd behave tests"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  workspaces:
+    - name: source
+      description: The workspace containing the cloned repo with features/
+  description: >-
+    This task runs Behave BDD tests against the deployed microservice.
+  params:
+    - name: BASE_URL
+      description: Base URL of the deployed service (Route hostname)
+      type: string
+  steps:
+    - name: run-behave
+      image: quay.io/rofrano/pipeline-selenium
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: BASE_URL
+          value: $(params.BASE_URL)
+      script: |
+        #!/bin/bash
+        set -e
+        export PATH=$PATH:$HOME/.local/bin
+
+        echo "***** Installing dependencies *****"
+        if [ -e "poetry.lock" ]; then
+          echo "Found poetry.lock file: using poetry"
+          python -m pip install poetry poetry-plugin-export
+          poetry export --with=dev -f requirements.txt --output requirements.txt
+        elif [ -e "Pipfile" ]; then
+          echo "Found Pipfile file: using pipenv ..."
+          python -m pip install --upgrade pip pipenv
+          pipenv requirements --dev > requirements.txt
+        fi
+        python -m pip install --user -r requirements.txt
+
+        echo "***** Running Behave Tests *****"
+        echo "BASE_URL: $(params.BASE_URL)"
+        behave --define BASE_URL=$(params.BASE_URL)
