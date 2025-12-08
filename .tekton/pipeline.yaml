@@ -75,8 +75,8 @@ spec:
         - name: dockerconfig
           workspace: dockerconfig
 
-    # Run BDD tests using behave task
-    - name: bdd-tests
+    # Run Behave tests using behave task
+    - name: behave-tests
       runAfter:
         - build-image
       taskRef:
