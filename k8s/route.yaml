@@ -5,7 +5,6 @@ metadata:
   labels:
     app: shopcarts
 spec:
-  host: shopcarts-ian-su-dev.apps.rm3.7wse.p1.openshiftapps.com
   port:
     targetPort: http
   to:
