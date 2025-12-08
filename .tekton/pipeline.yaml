@@ -18,6 +18,9 @@ spec:
       description: Git revision to build
       type: string
       default: main
+    - name: BASE_URL
+      description: Base URL of the deployed service (Route hostname) for BDD tests
+      type: string
   workspaces:
     - name: pipeline-workspace
       description: Shared workspace for source, manifests, and build context
@@ -71,3 +74,17 @@ spec:
           workspace: pipeline-workspace
         - name: dockerconfig
           workspace: dockerconfig
+
+    # Run BDD tests using behave task
+    - name: bdd-tests
+      runAfter:
+        - build-image
+      taskRef:
+        name: behave
+        kind: Task
+      params:
+        - name: base-url
+          value: $(params.BASE_URL)
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
