@@ -21,4 +21,20 @@ spec:
   workspaces:
     - name: pipeline-workspace
       description: Shared workspace for source, manifests, and build context
-  tasks: []
+
+  tasks:
+    # Clone repository into shared workspace
+    - name: clone
+      taskRef:
+        name: git-clone
+        kind: Task
+      params:
+        - name: url
+          value: $(params.GIT_REPO)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
