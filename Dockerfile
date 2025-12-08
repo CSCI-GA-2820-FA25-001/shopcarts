@@ -2,14 +2,11 @@
 FROM rofrano/nyu-devops-base:su25
 
 # Set up the Python development environment
+USER root
 WORKDIR /app
 COPY Pipfile Pipfile.lock ./
-RUN sudo python -m pip install --upgrade pip pipenv && \
-    sudo pipenv install --system --dev
-
-# Install user mode tools
-COPY .devcontainer/scripts/install-tools.sh /tmp/
-RUN cd /tmp && bash ./install-tools.sh
+RUN python -m pip install --upgrade pip pipenv && \
+    pipenv install --system --dev
 
 # Copy the application contents
 COPY wsgi.py .
