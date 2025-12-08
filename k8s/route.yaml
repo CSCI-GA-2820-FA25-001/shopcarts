@@ -10,6 +10,5 @@ spec:
   to:
     kind: Service
     name: shopcarts
-    weight: 100
   wildcardPolicy: None
 
