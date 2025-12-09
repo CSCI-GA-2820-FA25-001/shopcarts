@@ -234,34 +234,19 @@ The project uses Tekton for continuous integration and deployment. The pipeline 
 # Get the Route URL
 ROUTE_URL=$(oc get route shopcarts -o jsonpath='https://{.spec.host}')
 
-# Create a PipelineRun
-cat <<EOF | oc apply -f -
-apiVersion: tekton.dev/v1beta1
-kind: PipelineRun
-metadata:
-  generateName: cd-pipeline-manual-
-spec:
-  serviceAccountName: pipeline
-  pipelineRef:
-    name: cd-pipeline
-  params:
-    - name: APP_NAME
-      value: shopcarts
-    - name: GIT_REPO
-      value: https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git
-    - name: IMAGE_NAME
-      value: image-registry.openshift-image-registry.svc:5000/$(oc project -q)/shopcarts
-    - name: GIT_REVISION
-      value: main
-    - name: BASE_URL
-      value: $ROUTE_URL
-  workspaces:
-    - name: pipeline-workspace
-      persistentVolumeClaim:
-        claimName: pipeline-pvc
-    - name: dockerconfig
-      emptyDir: {}
-EOF
+# Run pipeline
+tkn pipeline start cd-pipeline \
+  -n ian-su-dev \
+  --serviceaccount pipeline \
+  --param APP_NAME=shopcarts \
+  --param GIT_REPO=https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git \
+  --param IMAGE_NAME=image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts \
+  --param GIT_REVISION=master \
+  --param BASE_URL=https://shopcarts-ian-su-dev.apps.rm3.7wse.p1.openshiftapps.com \
+  --workspace name=pipeline-workspace,claimName=pipeline-pvc \
+  --workspace name=dockerconfig,secret=docker-credentials \
+  --showlog
+
 ```
 
 ### View Pipeline Logs
