@@ -245,6 +245,24 @@ spec:
       description: The namespace to deploy to
       type: string
       default: "default"
+  steps:
+    - name: apply-manifests
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+        
+        echo "=========================================="
+        echo "Applying Kubernetes manifests from $(params.manifest-dir)/"
+        echo "=========================================="
+        
+        # Apply all manifests in the k8s directory recursively
+        oc apply -f $(params.manifest-dir)/ --recursive
+        
+        echo ""
+        echo "Manifests applied successfully!"
+        echo ""
 
 ---
 apiVersion: tekton.dev/v1beta1
