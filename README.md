@@ -21,12 +21,26 @@ The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, 
 - External access via OpenShift Routes
 
 ## Technology Stack
-- Python 3.11+
-- Flask 3.x
-- Flask-SQLAlchemy
-- PostgreSQL 15 (via Docker)
-- Pytest + Coverage (≥ 95%)
-- Pylint (PEP 8 compliance)
+
+### Application
+- **Python** 3.11+
+- **Flask** 3.x - Web framework
+- **Flask-SQLAlchemy** - ORM
+- **PostgreSQL** 15 - Database (Alpine image)
+- **Gunicorn** - WSGI HTTP Server
+
+### Testing
+- **Pytest** - Unit testing framework
+- **Coverage.py** - Code coverage (≥95%)
+- **Behave** - BDD testing with Selenium
+- **Pylint** - Code linting (PEP 8 compliance)
+
+### DevOps & Deployment
+- **Docker** - Containerization
+- **Kubernetes/OpenShift** - Container orchestration
+- **Tekton** - CI/CD pipeline
+- **Kaniko** - Container image building
+- **K3D** - Local Kubernetes development
 
 ## Setup Instructions
 
