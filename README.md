@@ -209,7 +209,6 @@ Run pylint to check code quality:
 make lint
 ```
 
-
 ## CI/CD Pipeline
 
 The project uses Tekton for continuous integration and deployment. The pipeline is automatically triggered on pushes to the repository.
@@ -278,9 +277,10 @@ LATEST_RUN=$(oc get pipelinerun --sort-by=.metadata.creationTimestamp -o jsonpat
 oc logs -l tekton.dev/pipelineRun=$LATEST_RUN -l tekton.dev/pipelineTask=
 ```
 
-## API Details
 
-### <u> Root Endpoint </u>
+## API Documentation
+
+### Root Endpoint
 ```http
 GET /
 ```
@@ -292,181 +292,169 @@ Response:
   "paths": "http://localhost:8080/api/shopcarts"
 }
 ```
-### <u>ShopCarts Endpoints and Expected Responses</u>
+
+### Health Check
 ```http
-POST   /api/shopcarts
-GET    /api/shopcarts
-GET    /api/shopcarts/<shopcart_id>
-DELETE /api/shopcarts/<shopcart_id>
+GET /health
 ```
-- **Create a Shopcart** (expects a json input) 
-    ```http
-    POST /api/shopcarts
-    Content-Type: application/json
-    ```
-    Request Body:
-    ```json
-    {
-    "customer_id": 123
-    }
-    ```
-    Response:
-    ```json
-    {
-    "customer_id": 123
-    "shopcart_id": 1
-    }
-    ```
-- **List Shopcarts**
-     ```http
-    GET /api/shopcarts
-    ```
-    Response 
-    ```json
-   [
-      {
-        "customer_id": 123,
-        "shopcart_id": 855
-      },
-      {
-        "customer_id": 13,
-        "shopcart_id": 857
-      }
-    ]
-    ```
-- **Read a Shopcart**
-    
-    ```http
-    GET /api/shopcarts/<shopcart_id>
-    ```
-  Response (assuming input 855)
-  ```json
-  {
-  "customer_id": 123,
-  "shopcart_id": 855
-  }
-  ```
-- **Delete a Shopcart** 
-  ```http
-    DELETE /api/shopcarts/<shopcart_id>
-  ```
-- **Update a Shopcart**
-  ```http
-  PUT /api/shopcarts/<shopcart_id>
-  Content-Type: application/json
-  ```
-  Request Body:
-  ```json
-  {
-  "shopcart_id": 855,
-  "customer_id": 124
-  }
-  ```
-
-  Response (assuming input 855)
-  ```json
-  {
-  "shopcart_id": 855,
-  "customer_id": 124
-  }
-  ```
-
-
-
-### <u>Items Endpoints and Expected Responses</u>
-```http
-POST   /api/shopcarts/<shopcart_id>/items
-GET    /api/shopcarts/<shopcart_id>/items
-GET    /api/shopcarts/<shopcart_id>/items/<item_id>
-PUT    /api/shopcarts/<shopcart_id>/items/<item_id>
+Response:
+```json
+{
+  "status": "OK"
+}
 ```
 
-- **Create an Item inside a Shopcart**
-  ```http
-  POST /api/shopcarts/<shopcart_id>/items
-  Content-Type: application/json
-  ```
-  Request Body:
-  ```json
+### ShopCarts Endpoints
+
+#### Create a Shopcart
+```http
+POST /api/shopcarts
+Content-Type: application/json
+
+{
+  "customer_id": 123
+}
+```
+Response: `201 Created`
+```json
+{
+  "shopcart_id": 1,
+  "customer_id": 123
+}
+```
+
+#### List All Shopcarts
+```http
+GET /api/shopcarts
+```
+Response: `200 OK`
+```json
+[
   {
-    "product_id": 101,
-    "quantity": 2,
-    "price": 19.99
+    "shopcart_id": 1,
+    "customer_id": 123
+  },
+  {
+    "shopcart_id": 2,
+    "customer_id": 456
   }
-  ```
-  Response:
-  ```json
+]
+```
+
+#### Get a Shopcart
+```http
+GET /api/shopcarts/{shopcart_id}
+```
+Response: `200 OK`
+```json
+{
+  "shopcart_id": 1,
+  "customer_id": 123
+}
+```
+
+#### Update a Shopcart
+```http
+PUT /api/shopcarts/{shopcart_id}
+Content-Type: application/json
+
+{
+  "customer_id": 124
+}
+```
+Response: `200 OK`
+```json
+{
+  "shopcart_id": 1,
+  "customer_id": 124
+}
+```
+
+#### Delete a Shopcart
+```http
+DELETE /api/shopcarts/{shopcart_id}
+```
+Response: `204 No Content`
+
+### Items Endpoints
+
+#### Add Item to Shopcart
+```http
+POST /api/shopcarts/{shopcart_id}/items
+Content-Type: application/json
+
+{
+  "product_id": 101,
+  "quantity": 2,
+  "price": 19.99
+}
+```
+Response: `201 Created`
+```json
+{
+  "item_id": 1,
+  "shopcart_id": 1,
+  "product_id": 101,
+  "quantity": 2,
+  "price": "19.99"
+}
+```
+
+#### List Items in Shopcart
+```http
+GET /api/shopcarts/{shopcart_id}/items
+```
+Response: `200 OK`
+```json
+[
   {
     "item_id": 1,
-    "shopcart_id": 855,
+    "shopcart_id": 1,
     "product_id": 101,
     "quantity": 2,
     "price": "19.99"
   }
-  ```
+]
+```
 
-- **List All Items in a Shopcart**
-  ```http
-  GET /api/shopcarts/<shopcart_id>/items
-  ```
-  Response:
-  ```json
-  [
-    {
-      "item_id": 1,
-      "shopcart_id": 855,
-      "product_id": 101,
-      "quantity": 2,
-      "price": "19.99"
-    },
-    {
-      "item_id": 2,
-      "shopcart_id": 855,
-      "product_id": 102,
-      "quantity": 1,
-      "price": "9.99"
-    }
-  ]
-  ```
+#### Get an Item
+```http
+GET /api/shopcarts/{shopcart_id}/items/{item_id}
+```
+Response: `200 OK`
+```json
+{
+  "item_id": 1,
+  "shopcart_id": 1,
+  "product_id": 101,
+  "quantity": 2,
+  "price": "19.99"
+}
+```
 
-- **Retrieve a Specific Item**
-  ```http
-  GET /api/shopcarts/<shopcart_id>/items/<item_id>
-  ```
-  Response:
-  ```json
-  {
-    "item_id": 1,
-    "shopcart_id": 855,
-    "product_id": 101,
-    "quantity": 2,
-    "price": "19.99"
-  }
-  ```
-- **Delete an Item in a Shopcart**
-    ```http
-  DELETE /api/shopcarts/<shopcart_id>/items/<item_id>
-  ```
+#### Update an Item
+```http
+PUT /api/shopcarts/{shopcart_id}/items/{item_id}
+Content-Type: application/json
 
-- **Update an Item in a Shopcart**
-  ```http
-  PUT /api/shopcarts/<shopcart_id>/items/<item_id>
-  Content-Type: application/json
-  ```
-  Request Body:
-  ```json
-  {
-    "quantity": 3,
-    "unit_price": 19.99
-  }
-  ```
-  Response:
-  ```json
-  {
-    "item_id": 1,
-    "shopcart_id": 855,
-    "product_id": 101,
-    "quantity": 3,
-    "price": "59.97"
-  }
-  ```
+{
+  "quantity": 3,
+  "price": 19.99
+}
+```
+Response: `200 OK`
+```json
+{
+  "item_id": 1,
+  "shopcart_id": 1,
+  "product_id": 101,
+  "quantity": 3,
+  "price": "19.99"
+}
+```
+
+#### Delete an Item
+```http
+DELETE /api/shopcarts/{shopcart_id}/items/{item_id}
+```
+Response: `204 No Content`
