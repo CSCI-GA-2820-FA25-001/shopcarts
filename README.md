@@ -458,3 +458,12 @@ Response: `200 OK`
 DELETE /api/shopcarts/{shopcart_id}/items/{item_id}
 ```
 Response: `204 No Content`
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URI` | PostgreSQL connection string | `postgresql+psycopg://postgres:postgres@localhost:5432/postgres` |
+| `PORT` | Application port | `8080` |
+| `SECRET_KEY` | Flask secret key for sessions | `sup3r-s3cr3t` |
+| `BASE_URL` | Base URL for BDD tests | `http://localhost:8080` |
