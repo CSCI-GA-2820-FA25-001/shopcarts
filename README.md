@@ -181,6 +181,34 @@ ROUTE_URL=$(oc get route shopcarts -o jsonpath='{.spec.host}')
 curl https://$ROUTE_URL/health
 ```
 
+
+## Testing
+
+### Unit Tests
+Run pytest with coverage:
+```bash
+make test
+```
+
+Requirements:
+- Minimum 95% code coverage
+- All tests must pass
+- Database connection via secret
+
+### BDD Tests
+Run Behave tests:
+```bash
+behave
+```
+
+The BDD tests use Selenium WebDriver to test the application through the browser. They automatically target the deployed service using the `BASE_URL` environment variable.
+
+### Linting
+Run pylint to check code quality:
+```bash
+make lint
+```
+
 ## API Details
 
 ### <u> Root Endpoint </u>
