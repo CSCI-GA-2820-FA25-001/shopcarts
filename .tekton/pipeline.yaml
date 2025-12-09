@@ -1,115 +1,948 @@
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
+apiVersion: tekton.dev/v1
+kind: PipelineRun
 metadata:
-  name: cd-pipeline
+  generateName: cd-pipeline-run-
+  annotations:
+    results.tekton.dev/record: ian-su-dev/results/1c89523c-71d2-4a79-8b9c-abe2d8e52760/records/1c89523c-71d2-4a79-8b9c-abe2d8e52760
+    results.tekton.dev/result: ian-su-dev/results/1c89523c-71d2-4a79-8b9c-abe2d8e52760
+    results.tekton.dev/stored: 'true'
+  resourceVersion: '6840600635'
+  name: cd-pipeline-run-hnjh6
+  uid: 1c89523c-71d2-4a79-8b9c-abe2d8e52760
+  creationTimestamp: '2025-12-09T18:28:45Z'
+  generation: 1
+  managedFields:
+    - apiVersion: tekton.dev/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:labels':
+            .: {}
+            'f:tekton.dev/pipeline': {}
+      manager: controller
+      operation: Update
+      time: '2025-12-09T18:28:45Z'
+    - apiVersion: tekton.dev/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:generateName': {}
+        'f:spec':
+          .: {}
+          'f:params': {}
+          'f:pipelineRef':
+            .: {}
+            'f:name': {}
+          'f:taskRunTemplate':
+            .: {}
+            'f:serviceAccountName': {}
+          'f:workspaces': {}
+      manager: tkn
+      operation: Update
+      time: '2025-12-09T18:28:45Z'
+    - apiVersion: tekton.dev/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:status':
+          .: {}
+          'f:childReferences': {}
+          'f:completionTime': {}
+          'f:conditions': {}
+          'f:pipelineSpec':
+            .: {}
+            'f:description': {}
+            'f:params': {}
+            'f:tasks': {}
+            'f:workspaces': {}
+          'f:provenance':
+            .: {}
+            'f:featureFlags':
+              'f:verificationNoMatchPolicy': {}
+              'f:runningInEnvWithInjectedSidecars': {}
+              .: {}
+              'f:maxResultSize': {}
+              'f:awaitSidecarReadiness': {}
+              'f:enableProvenanceInStatus': {}
+              'f:coschedule': {}
+              'f:resultExtractionMethod': {}
+              'f:enableAPIFields': {}
+              'f:enforceNonfalsifiability': {}
+          'f:startTime': {}
+      manager: controller
+      operation: Update
+      subresource: status
+      time: '2025-12-09T18:33:12Z'
+    - apiVersion: tekton.dev/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:results.tekton.dev/record': {}
+            'f:results.tekton.dev/result': {}
+            'f:results.tekton.dev/stored': {}
+          'f:finalizers':
+            .: {}
+            'v:"results.tekton.dev/pipelinerun"': {}
+      manager: openshift-pipelines-results-watcher
+      operation: Update
+      time: '2025-12-09T18:33:13Z'
+  namespace: ian-su-dev
+  finalizers:
+    - results.tekton.dev/pipelinerun
+  labels:
+    tekton.dev/pipeline: cd-pipeline
 spec:
-  description: Minimal placeholder pipeline for ShopCarts; tasks to be added later.
   params:
     - name: APP_NAME
-      description: Application name used for Kubernetes resources
-      type: string
-    - name: GIT_REPO
-      description: Git repository to clone
-      type: string
-    - name: IMAGE_NAME
-      description: Fully qualified image repository
-      type: string
-    - name: GIT_REVISION
-      description: Git revision to build
-      type: string
-      default: main
+      value: shopcarts
     - name: BASE_URL
-      description: Base URL of the deployed service (Route hostname) for BDD tests
-      type: string
+      value: 'https://shopcarts-ian-su-dev.apps.rm3.7wse.p1.openshiftapps.com'
+    - name: GIT_REPO
+      value: 'https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git'
+    - name: GIT_REVISION
+      value: master
+    - name: IMAGE_NAME
+      value: 'image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts'
+  pipelineRef:
+    name: cd-pipeline
+  taskRunTemplate:
+    serviceAccountName: pipeline
+  timeouts:
+    pipeline: 1h0m0s
   workspaces:
-    - name: pipeline-workspace
-      description: Shared workspace for source, manifests, and build context
     - name: dockerconfig
-      description: Docker registry config (config.json) for kaniko
+      secret:
+        secretName: kaniko-docker-config
+    - name: pipeline-workspace
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+status:
+  childReferences:
+    - apiVersion: tekton.dev/v1
+      kind: TaskRun
+      name: cd-pipeline-run-hnjh6-clone
+      pipelineTaskName: clone
+    - apiVersion: tekton.dev/v1
+      kind: TaskRun
+      name: cd-pipeline-run-hnjh6-lint
+      pipelineTaskName: lint
+    - apiVersion: tekton.dev/v1
+      kind: TaskRun
+      name: cd-pipeline-run-hnjh6-unit-tests
+      pipelineTaskName: unit-tests
+    - apiVersion: tekton.dev/v1
+      kind: TaskRun
+      name: cd-pipeline-run-hnjh6-build-image
+      pipelineTaskName: build-image
+    - apiVersion: tekton.dev/v1
+      kind: TaskRun
+      name: cd-pipeline-run-hnjh6-deploy
+      pipelineTaskName: deploy
+    - apiVersion: tekton.dev/v1
+      kind: TaskRun
+      name: cd-pipeline-run-hnjh6-bdd-tests
+      pipelineTaskName: bdd-tests
+  completionTime: '2025-12-09T18:33:12Z'
+  conditions:
+    - lastTransitionTime: '2025-12-09T18:33:12Z'
+      message: 'Tasks Completed: 6 (Failed: 0, Cancelled 0), Skipped: 0'
+      reason: Succeeded
+      status: 'True'
+      type: Succeeded
+  pipelineSpec:
+    description: CI/CD Pipeline for ShopCarts microservice with deployment and BDD testing
+    params:
+      - description: Application name used for Kubernetes resources
+        name: APP_NAME
+        type: string
+      - description: Git repository to clone
+        name: GIT_REPO
+        type: string
+      - description: Fully qualified image repository
+        name: IMAGE_NAME
+        type: string
+      - default: main
+        description: Git revision to build
+        name: GIT_REVISION
+        type: string
+      - description: 'The Route hostname for BDD testing (e.g., http://shopcarts-dev.apps.cluster.com)'
+        name: BASE_URL
+        type: string
+    tasks:
+      - name: clone
+        params:
+          - name: url
+            value: 'https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git'
+          - name: revision
+            value: master
+          - name: deleteExisting
+            value: 'true'
+        taskRef:
+          kind: Task
+          name: git-clone
+        workspaces:
+          - name: output
+            workspace: pipeline-workspace
+        status:
+          taskSpec:
+            description: |-
+              These Tasks are Git tasks to work with repositories used by other tasks in your Pipeline.
+              The git-clone Task will clone a repo from the provided url into the output Workspace. By default the repo will be cloned into the root of your Workspace. You can clone into a subdirectory by setting this Task's subdirectory param. This Task also supports sparse checkouts. To perform a sparse checkout, pass a list of comma separated directory patterns to this Task's sparseCheckoutDirectories param.
+            params:
+              - description: Repository URL to clone from.
+                name: url
+                type: string
+              - default: ''
+                description: 'Revision to checkout. (branch, tag, sha, ref, etc...)'
+                name: revision
+                type: string
+              - default: ''
+                description: Refspec to fetch before checking out revision.
+                name: refspec
+                type: string
+              - default: 'true'
+                description: Initialize and fetch git submodules.
+                name: submodules
+                type: string
+              - default: '1'
+                description: 'Perform a shallow clone, fetching only the most recent N commits.'
+                name: depth
+                type: string
+              - default: 'true'
+                description: Set the `http.sslVerify` global git config. Setting this to `false` is not advised unless you are sure that you trust your git remote.
+                name: sslVerify
+                type: string
+              - default: ca-bundle.crt
+                description: file name of mounted crt using ssl-ca-directory workspace. default value is ca-bundle.crt.
+                name: crtFileName
+                type: string
+              - default: ''
+                description: Subdirectory inside the `output` Workspace to clone the repo into.
+                name: subdirectory
+                type: string
+              - default: ''
+                description: Define the directory patterns to match or exclude when performing a sparse checkout.
+                name: sparseCheckoutDirectories
+                type: string
+              - default: 'true'
+                description: Clean out the contents of the destination directory if it already exists before cloning.
+                name: deleteExisting
+                type: string
+              - default: ''
+                description: HTTP proxy server for non-SSL requests.
+                name: httpProxy
+                type: string
+              - default: ''
+                description: HTTPS proxy server for SSL requests.
+                name: httpsProxy
+                type: string
+              - default: ''
+                description: Opt out of proxying HTTP/HTTPS requests.
+                name: noProxy
+                type: string
+              - default: 'true'
+                description: Log the commands that are executed during `git-clone`'s operation.
+                name: verbose
+                type: string
+              - default: 'ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.40.2'
+                description: The image providing the git-init binary that this Task runs.
+                name: gitInitImage
+                type: string
+              - default: /home/git
+                description: |
+                  Absolute path to the user's home directory.
+                name: userHome
+                type: string
+            results:
+              - description: The precise commit SHA that was fetched by this Task.
+                name: commit
+                type: string
+              - description: The precise URL that was fetched by this Task.
+                name: url
+                type: string
+              - description: The epoch timestamp of the commit that was fetched by this Task.
+                name: committer-date
+                type: string
+            steps:
+              - computeResources: {}
+                env:
+                  - name: HOME
+                    value: /home/git
+                  - name: PARAM_URL
+                    value: 'https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git'
+                  - name: PARAM_REVISION
+                    value: master
+                  - name: PARAM_REFSPEC
+                  - name: PARAM_SUBMODULES
+                    value: 'true'
+                  - name: PARAM_DEPTH
+                    value: '1'
+                  - name: PARAM_SSL_VERIFY
+                    value: 'true'
+                  - name: PARAM_CRT_FILENAME
+                    value: ca-bundle.crt
+                  - name: PARAM_SUBDIRECTORY
+                  - name: PARAM_DELETE_EXISTING
+                    value: 'true'
+                  - name: PARAM_HTTP_PROXY
+                  - name: PARAM_HTTPS_PROXY
+                  - name: PARAM_NO_PROXY
+                  - name: PARAM_VERBOSE
+                    value: 'true'
+                  - name: PARAM_SPARSE_CHECKOUT_DIRECTORIES
+                  - name: PARAM_USER_HOME
+                    value: /home/git
+                  - name: WORKSPACE_OUTPUT_PATH
+                    value: /workspace/output
+                  - name: WORKSPACE_SSH_DIRECTORY_BOUND
+                    value: 'false'
+                  - name: WORKSPACE_SSH_DIRECTORY_PATH
+                  - name: WORKSPACE_BASIC_AUTH_DIRECTORY_BOUND
+                    value: 'false'
+                  - name: WORKSPACE_BASIC_AUTH_DIRECTORY_PATH
+                  - name: WORKSPACE_SSL_CA_DIRECTORY_BOUND
+                    value: 'false'
+                  - name: WORKSPACE_SSL_CA_DIRECTORY_PATH
+                image: 'ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.40.2'
+                name: clone
+                script: |
+                  #!/usr/bin/env sh
+                  set -eu
 
-  tasks:
-    # Clone repository into shared workspace
-    - name: clone
-      taskRef:
-        name: git-clone
-        kind: Task
-      params:
-        - name: url
-          value: $(params.GIT_REPO)
-        - name: revision
-          value: $(params.GIT_REVISION)
-        - name: deleteExisting
-          value: "true"
-      workspaces:
-        - name: output
-          workspace: pipeline-workspace
+                  if [ "${PARAM_VERBOSE}" = "true" ] ; then
+                    set -x
+                  fi
 
-    # Run pylint linting on the service code
-    - name: lint
-      runAfter:
-        - clone
-      taskRef:
-        name: pylint
-        kind: Task
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
-    # Run unit tests using pytest
-    - name: unit-tests
-      runAfter:
-        - lint
-      taskRef:
-        name: pytest-env
-        kind: Task
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
+                  if [ "${WORKSPACE_BASIC_AUTH_DIRECTORY_BOUND}" = "true" ] ; then
+                    cp "${WORKSPACE_BASIC_AUTH_DIRECTORY_PATH}/.git-credentials" "${PARAM_USER_HOME}/.git-credentials"
+                    cp "${WORKSPACE_BASIC_AUTH_DIRECTORY_PATH}/.gitconfig" "${PARAM_USER_HOME}/.gitconfig"
+                    chmod 400 "${PARAM_USER_HOME}/.git-credentials"
+                    chmod 400 "${PARAM_USER_HOME}/.gitconfig"
+                  fi
 
-    # Build and push Docker image once using Tekton Hub kaniko Task,
-    # tagging it with both the Git commit SHA and latest.
-    - name: build-image
-      runAfter:
-        - unit-tests
-      taskRef:
-        name: kaniko
-        kind: Task
-      params:
-        - name: IMAGE
-          value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
-        - name: EXTRA_ARGS
-          value:
-            - --destination=$(params.IMAGE_NAME):latest
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
-        - name: dockerconfig
-          workspace: dockerconfig
+                  if [ "${WORKSPACE_SSH_DIRECTORY_BOUND}" = "true" ] ; then
+                    cp -R "${WORKSPACE_SSH_DIRECTORY_PATH}" "${PARAM_USER_HOME}"/.ssh
+                    chmod 700 "${PARAM_USER_HOME}"/.ssh
+                    chmod -R 400 "${PARAM_USER_HOME}"/.ssh/*
+                  fi
 
-    # Run Behave tests using behave task
- 
-    - name: deploy
-      runAfter:
-        - build-image
-      taskRef:
-        name: deploy-image
-        kind: Task
-      params:
-        - name: image-name
-          value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
-        - name: manifest-dir
-          value: k8s
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
-    - name: behave-tests
-      runAfter:
-        - deploy
-      taskRef:
-        name: behave
-        kind: Task
-      params:
-        - name: base-url
-          value: $(params.BASE_URL)
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
+                  if [ "${WORKSPACE_SSL_CA_DIRECTORY_BOUND}" = "true" ] ; then
+                     export GIT_SSL_CAPATH="${WORKSPACE_SSL_CA_DIRECTORY_PATH}"
+                     if [ "${PARAM_CRT_FILENAME}" != "" ] ; then
+                        export GIT_SSL_CAINFO="${WORKSPACE_SSL_CA_DIRECTORY_PATH}/${PARAM_CRT_FILENAME}"
+                     fi
+                  fi
+                  CHECKOUT_DIR="${WORKSPACE_OUTPUT_PATH}/${PARAM_SUBDIRECTORY}"
+
+                  cleandir() {
+                    # Delete any existing contents of the repo directory if it exists.
+                    #
+                    # We don't just "rm -rf ${CHECKOUT_DIR}" because ${CHECKOUT_DIR} might be "/"
+                    # or the root of a mounted volume.
+                    if [ -d "${CHECKOUT_DIR}" ] ; then
+                      # Delete non-hidden files and directories
+                      rm -rf "${CHECKOUT_DIR:?}"/*
+                      # Delete files and directories starting with . but excluding ..
+                      rm -rf "${CHECKOUT_DIR}"/.[!.]*
+                      # Delete files and directories starting with .. plus any other character
+                      rm -rf "${CHECKOUT_DIR}"/..?*
+                    fi
+                  }
+
+                  if [ "${PARAM_DELETE_EXISTING}" = "true" ] ; then
+                    cleandir || true
+                  fi
+
+                  test -z "${PARAM_HTTP_PROXY}" || export HTTP_PROXY="${PARAM_HTTP_PROXY}"
+                  test -z "${PARAM_HTTPS_PROXY}" || export HTTPS_PROXY="${PARAM_HTTPS_PROXY}"
+                  test -z "${PARAM_NO_PROXY}" || export NO_PROXY="${PARAM_NO_PROXY}"
+
+                  git config --global --add safe.directory "${WORKSPACE_OUTPUT_PATH}"
+                  /ko-app/git-init \
+                    -url="${PARAM_URL}" \
+                    -revision="${PARAM_REVISION}" \
+                    -refspec="${PARAM_REFSPEC}" \
+                    -path="${CHECKOUT_DIR}" \
+                    -sslVerify="${PARAM_SSL_VERIFY}" \
+                    -submodules="${PARAM_SUBMODULES}" \
+                    -depth="${PARAM_DEPTH}" \
+                    -sparseCheckoutDirectories="${PARAM_SPARSE_CHECKOUT_DIRECTORIES}"
+                  cd "${CHECKOUT_DIR}"
+                  RESULT_SHA="$(git rev-parse HEAD)"
+                  EXIT_CODE="$?"
+                  if [ "${EXIT_CODE}" != 0 ] ; then
+                    exit "${EXIT_CODE}"
+                  fi
+                  RESULT_COMMITTER_DATE="$(git log -1 --pretty=%ct)"
+                  printf "%s" "${RESULT_COMMITTER_DATE}" > "/tekton/results/committer-date"
+                  printf "%s" "${RESULT_SHA}" > "/tekton/results/commit"
+                  printf "%s" "${PARAM_URL}" > "/tekton/results/url"
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 65532
+            workspaces:
+              - description: The git repo will be cloned onto the volume backing this Workspace.
+                name: output
+              - description: |
+                  A .ssh directory with private key, known_hosts, config, etc. Copied to
+                  the user's home before git commands are executed. Used to authenticate
+                  with the git remote when performing the clone. Binding a Secret to this
+                  Workspace is strongly recommended over other volume types.
+                name: ssh-directory
+                optional: true
+              - description: |
+                  A Workspace containing a .gitconfig and .git-credentials file. These
+                  will be copied to the user's home before any git commands are run. Any
+                  other files in this Workspace are ignored. It is strongly recommended
+                  to use ssh-directory over basic-auth whenever possible and to bind a
+                  Secret to this Workspace over other volume types.
+                name: basic-auth
+                optional: true
+              - description: |
+                  A workspace containing CA certificates, this will be used by Git to
+                  verify the peer with when fetching or pushing over HTTPS.
+                name: ssl-ca-directory
+                optional: true
+          artifacts: {}
+          provenance:
+            featureFlags:
+              maxResultSize: 4096
+              awaitSidecarReadiness: true
+              coschedule: workspaces
+              resultExtractionMethod: termination-message
+              enforceNonfalsifiability: none
+              enableAPIFields: beta
+              runningInEnvWithInjectedSidecars: true
+              verificationNoMatchPolicy: ignore
+              enableProvenanceInStatus: true
+          steps:
+            - container: step-clone
+              imageID: 'ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init@sha256:176c1d67371296b29447cef5478ad50cc6546ad858d34122e626b3a12d225436'
+              name: clone
+              terminated:
+                containerID: 'cri-o://b9f260ae9565f8946e9b79a82524b2f1fac6c3d64a8b73be8f9128856589f404'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:28:53Z'
+                message: '[{"key":"commit","value":"4635884740c92bb7d124a3def48e4984591973b0","type":1},{"key":"committer-date","value":"1765255104","type":1},{"key":"url","value":"https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git","type":1}]'
+                reason: Completed
+                startedAt: '2025-12-09T18:28:53Z'
+              terminationReason: Completed
+          completionTime: '2025-12-09T18:28:54Z'
+          startTime: '2025-12-09T18:28:45Z'
+          podName: cd-pipeline-run-hnjh6-clone-pod
+          results:
+            - name: commit
+              type: string
+              value: 4635884740c92bb7d124a3def48e4984591973b0
+            - name: committer-date
+              type: string
+              value: '1765255104'
+            - name: url
+              type: string
+              value: 'https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git'
+          conditions:
+            - lastTransitionTime: '2025-12-09T18:28:54Z'
+              message: All Steps have completed executing
+              reason: Succeeded
+              status: 'True'
+              type: Succeeded
+          duration: 9s
+          reason: Succeeded
+      - name: lint
+        runAfter:
+          - clone
+        taskRef:
+          kind: Task
+          name: pylint
+        workspaces:
+          - name: source
+            workspace: pipeline-workspace
+        status:
+          artifacts: {}
+          completionTime: '2025-12-09T18:29:39Z'
+          conditions:
+            - lastTransitionTime: '2025-12-09T18:29:39Z'
+              message: All Steps have completed executing
+              reason: Succeeded
+              status: 'True'
+              type: Succeeded
+          podName: cd-pipeline-run-hnjh6-lint-pod
+          provenance:
+            featureFlags:
+              maxResultSize: 4096
+              awaitSidecarReadiness: true
+              coschedule: workspaces
+              resultExtractionMethod: termination-message
+              enforceNonfalsifiability: none
+              enableAPIFields: beta
+              runningInEnvWithInjectedSidecars: true
+              verificationNoMatchPolicy: ignore
+              enableProvenanceInStatus: true
+          startTime: '2025-12-09T18:28:54Z'
+          steps:
+            - container: step-run-pylint
+              imageID: 'quay.io/rofrano/python@sha256:2417cb55fa682fcd1705717b5dda9c7b3ad1b6bc6878318aab17182194db42f9'
+              name: run-pylint
+              terminated:
+                containerID: 'cri-o://24d8861cff30a4b68264ce61e10a15f4d265cbfdc2cb38fe0874aa78624f5b38'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:29:39Z'
+                reason: Completed
+                startedAt: '2025-12-09T18:28:58Z'
+              terminationReason: Completed
+          taskSpec:
+            description: Run pylint on the ShopCarts service using Pipenv and the existing Pipfile in the repo.
+            params:
+              - default: 'quay.io/rofrano/python:3.11-slim'
+                description: Python image used to run pylint
+                name: python-image
+                type: string
+            steps:
+              - computeResources: {}
+                image: 'quay.io/rofrano/python:3.11-slim'
+                name: run-pylint
+                script: |
+                  #!/bin/bash
+                  set -euo pipefail
+                  export PATH="$PATH:$HOME/.local/bin"
+
+                  echo "***** Installing dependencies with Pipenv *****"
+                  python -m pip install --upgrade pip pipenv
+                  pipenv install --system --dev
+
+                  echo "***** Running pylint *****"
+                  pylint service tests
+                workingDir: /workspace/source
+            workspaces:
+              - description: The workspace with the source code.
+                name: source
+          duration: 45s
+          reason: Succeeded
+      - name: unit-tests
+        params:
+          - name: secret-name
+            value: postgres-creds
+          - name: secret-key
+            value: database_uri
+        runAfter:
+          - lint
+        taskRef:
+          kind: Task
+          name: pytest-env
+        workspaces:
+          - name: source
+            workspace: pipeline-workspace
+        status:
+          artifacts: {}
+          completionTime: '2025-12-09T18:30:16Z'
+          conditions:
+            - lastTransitionTime: '2025-12-09T18:30:16Z'
+              message: All Steps have completed executing
+              reason: Succeeded
+              status: 'True'
+              type: Succeeded
+          podName: cd-pipeline-run-hnjh6-unit-tests-pod
+          provenance:
+            featureFlags:
+              maxResultSize: 4096
+              awaitSidecarReadiness: true
+              coschedule: workspaces
+              resultExtractionMethod: termination-message
+              enforceNonfalsifiability: none
+              enableAPIFields: beta
+              runningInEnvWithInjectedSidecars: true
+              verificationNoMatchPolicy: ignore
+              enableProvenanceInStatus: true
+          startTime: '2025-12-09T18:29:39Z'
+          steps:
+            - container: step-pytest
+              imageID: 'quay.io/rofrano/python@sha256:2417cb55fa682fcd1705717b5dda9c7b3ad1b6bc6878318aab17182194db42f9'
+              name: pytest
+              terminated:
+                containerID: 'cri-o://fdefb227acc19f214bc6051c95bad62e91ffbc86658d7edba6f24d4b059aed9d'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:30:15Z'
+                reason: Completed
+                startedAt: '2025-12-09T18:29:45Z'
+              terminationReason: Completed
+          taskSpec:
+            description: |-
+              This task can be used to perform unit tests with pytest. It supports both requirements.txt, Pipfile, & poetry.lock files.
+              It also has the ability to create an environment variable that is sourced from a Secret. This allows you to define credentials that can be used to connect to a test database.
+            params:
+              - default: []
+                description: The arguments to pass to the pytest CLI.
+                name: pytest-args
+                type: array
+              - default: postgres-creds
+                description: The name of the secret containing a database_uri key
+                name: secret-name
+                type: string
+              - default: database_uri
+                description: The name of the key that contains the database uri
+                name: secret-key
+                type: string
+            steps:
+              - computeResources: {}
+                env:
+                  - name: DATABASE_URI
+                    valueFrom:
+                      secretKeyRef:
+                        key: database_uri
+                        name: postgres-creds
+                image: 'quay.io/rofrano/python:3.11-slim'
+                name: pytest
+                script: |
+                  #!/bin/bash
+                  set -e
+                  export PATH=$PATH:$HOME/.local/bin:
+
+                  echo "***** Installing dependencies *****"
+                  if [ -e "poetry.lock" ]; then
+                    echo "Found poetry.lock file: using poetry ..."
+                    python -m pip install --upgrade pip poetry
+                    poetry config virtualenvs.create false
+                    poetry install
+                  elif [ -e "Pipfile" ]; then
+                    echo "Found Pipfile file: using pipenv ..."
+                    python -m pip install --upgrade pip pipenv
+                    pipenv install --system --dev
+                  elif [ -e "requirements.txt" ]; then
+                    python -m pip install --user -r requirements.txt
+                  fi
+
+                  # Make sure pylint is installed
+                  python -m pip install pytest
+
+                  echo "***** Running Tests *****"
+                  pytest --version
+                  pytest
+                workingDir: /workspace/source
+            workspaces:
+              - name: source
+          duration: 37s
+          reason: Succeeded
+      - name: build-image
+        params:
+          - name: IMAGE
+            value: 'image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:$(tasks.clone.results.commit)'
+          - name: EXTRA_ARGS
+            value:
+              - '--destination=image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:latest'
+        runAfter:
+          - unit-tests
+        taskRef:
+          kind: Task
+          name: kaniko
+        workspaces:
+          - name: source
+            workspace: pipeline-workspace
+          - name: dockerconfig
+            workspace: dockerconfig
+        status:
+          taskSpec:
+            description: 'This Task builds a simple Dockerfile with kaniko and pushes to a registry. This Task stores the image name and digest as results, allowing Tekton Chains to pick up that an image was built & sign it.'
+            params:
+              - description: Name (reference) of the image to build.
+                name: IMAGE
+                type: string
+              - default: ./Dockerfile
+                description: Path to the Dockerfile to build.
+                name: DOCKERFILE
+                type: string
+              - default: ./
+                description: The build context used by Kaniko.
+                name: CONTEXT
+                type: string
+              - default: []
+                name: EXTRA_ARGS
+                type: array
+              - default: 'gcr.io/kaniko-project/executor:v1.5.1@sha256:c6166717f7fe0b7da44908c986137ecfeab21f31ec3992f6e128fff8a94be8a5'
+                description: The image on which builds will run (default is v1.5.1)
+                name: BUILDER_IMAGE
+                type: string
+              - default: 'docker.io/library/bash:5.1.4@sha256:c523c636b722339f41b6a431b44588ab2f762c5de5ec3bd7964420ff982fb1d9'
+                description: 'The image on which the write-url step will run (default is docker.io/library/bash:5.1.4@sha256:c523c636b722339f41b6a431b44588ab2f762c5de5ec3bd7964420ff982fb1d9)'
+                name: WRITER_IMAGE
+                type: string
+            results:
+              - description: Digest of the image just built.
+                name: IMAGE_DIGEST
+                type: string
+              - description: URL of the image just built.
+                name: IMAGE_URL
+                type: string
+            steps:
+              - args:
+                  - '--destination=image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:latest'
+                  - '--dockerfile=./Dockerfile'
+                  - '--context=/workspace/source/./'
+                  - '--destination=image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:4635884740c92bb7d124a3def48e4984591973b0'
+                  - '--digest-file=/tekton/results/IMAGE_DIGEST'
+                computeResources: {}
+                image: 'gcr.io/kaniko-project/executor:v1.5.1@sha256:c6166717f7fe0b7da44908c986137ecfeab21f31ec3992f6e128fff8a94be8a5'
+                name: build-and-push
+                securityContext:
+                  runAsUser: 0
+                workingDir: /workspace/source
+              - computeResources: {}
+                image: 'docker.io/library/bash:5.1.4@sha256:c523c636b722339f41b6a431b44588ab2f762c5de5ec3bd7964420ff982fb1d9'
+                name: write-url
+                script: |
+                  set -e
+                  image="image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:4635884740c92bb7d124a3def48e4984591973b0"
+                  printf "%s" "${image}" | tee "/tekton/results/IMAGE_URL"
+            workspaces:
+              - description: Holds the context and Dockerfile
+                name: source
+              - description: Includes a docker `config.json`
+                mountPath: /kaniko/.docker
+                name: dockerconfig
+                optional: true
+          artifacts: {}
+          provenance:
+            featureFlags:
+              maxResultSize: 4096
+              awaitSidecarReadiness: true
+              coschedule: workspaces
+              resultExtractionMethod: termination-message
+              enforceNonfalsifiability: none
+              enableAPIFields: beta
+              runningInEnvWithInjectedSidecars: true
+              verificationNoMatchPolicy: ignore
+              enableProvenanceInStatus: true
+          steps:
+            - container: step-build-and-push
+              imageID: 'gcr.io/kaniko-project/executor@sha256:68bb272f681f691254acfbdcef00962f22efe2f0c1e287e6a837b0abe07fb94b'
+              name: build-and-push
+              terminated:
+                containerID: 'cri-o://97229d79e94361f1c625fd0cd7ac7dbbb7304a76da6dbde9787be3638f2c6ce5'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:31:30Z'
+                message: '[{"key":"IMAGE_DIGEST","value":"sha256:fc5ee0834d54c071f4ed6b9de0396d4a7732d9790c58a71e219bde1ac9bdd03a","type":1}]'
+                reason: Completed
+                startedAt: '2025-12-09T18:30:22Z'
+              terminationReason: Completed
+            - container: step-write-url
+              imageID: 'docker.io/library/bash@sha256:c523c636b722339f41b6a431b44588ab2f762c5de5ec3bd7964420ff982fb1d9'
+              name: write-url
+              terminated:
+                containerID: 'cri-o://370635ecbb5439c2f11ba02f2a017c70e9c32fc899b942c1db9ac8eae64b809b'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:31:31Z'
+                message: '[{"key":"IMAGE_DIGEST","value":"sha256:fc5ee0834d54c071f4ed6b9de0396d4a7732d9790c58a71e219bde1ac9bdd03a","type":1},{"key":"IMAGE_URL","value":"image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:4635884740c92bb7d124a3def48e4984591973b0","type":1}]'
+                reason: Completed
+                startedAt: '2025-12-09T18:31:31Z'
+              terminationReason: Completed
+          completionTime: '2025-12-09T18:31:31Z'
+          startTime: '2025-12-09T18:30:16Z'
+          podName: cd-pipeline-run-hnjh6-build-image-pod
+          results:
+            - name: IMAGE_DIGEST
+              type: string
+              value: 'sha256:fc5ee0834d54c071f4ed6b9de0396d4a7732d9790c58a71e219bde1ac9bdd03a'
+            - name: IMAGE_URL
+              type: string
+              value: 'image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:4635884740c92bb7d124a3def48e4984591973b0'
+          conditions:
+            - lastTransitionTime: '2025-12-09T18:31:31Z'
+              message: All Steps have completed executing
+              reason: Succeeded
+              status: 'True'
+              type: Succeeded
+          duration: 1m 15s
+          reason: Succeeded
+      - name: deploy
+        params:
+          - name: image-name
+            value: 'image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:$(tasks.clone.results.commit)'
+          - name: manifest-dir
+            value: k8s
+          - name: deployment-name
+            value: shopcarts
+        runAfter:
+          - build-image
+        taskRef:
+          kind: Task
+          name: deploy-task
+        workspaces:
+          - name: source
+            workspace: pipeline-workspace
+        status:
+          artifacts: {}
+          completionTime: '2025-12-09T18:32:07Z'
+          conditions:
+            - lastTransitionTime: '2025-12-09T18:32:07Z'
+              message: All Steps have completed executing
+              reason: Succeeded
+              status: 'True'
+              type: Succeeded
+          podName: cd-pipeline-run-hnjh6-deploy-pod
+          provenance:
+            featureFlags:
+              maxResultSize: 4096
+              awaitSidecarReadiness: true
+              coschedule: workspaces
+              resultExtractionMethod: termination-message
+              enforceNonfalsifiability: none
+              enableAPIFields: beta
+              runningInEnvWithInjectedSidecars: true
+              verificationNoMatchPolicy: ignore
+              enableProvenanceInStatus: true
+          startTime: '2025-12-09T18:31:31Z'
+          steps:
+            - container: step-deploy
+              imageID: 'quay.io/openshift/origin-cli@sha256:66e2fc303de0ea0835a1b8643b9af5b6c953572982c6f26ba51ee8ea9148880f'
+              name: deploy
+              terminated:
+                containerID: 'cri-o://4a3bf8ae6ae81fde5aa0b0a41daae9d8daceef93c6ee639b75f31f5254280df3'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:32:06Z'
+                reason: Completed
+                startedAt: '2025-12-09T18:31:41Z'
+              terminationReason: Completed
+          taskSpec:
+            params:
+              - name: image-name
+                type: string
+              - default: k8s
+                name: manifest-dir
+                type: string
+              - default: shopcarts
+                name: app-name
+                type: string
+            steps:
+              - computeResources: {}
+                image: 'quay.io/openshift/origin-cli:latest'
+                name: deploy
+                script: |
+                  #!/usr/bin/env bash
+                  set -e
+                  if command -v yq >/dev/null 2>&1; then
+                    yq -i '.spec.template.spec.containers[0].image = "image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:4635884740c92bb7d124a3def48e4984591973b0"' k8s/deployment.yaml
+                  else
+                    sed -i 's|image:.*|image: image-registry.openshift-image-registry.svc:5000/ian-su-dev/shopcarts:4635884740c92bb7d124a3def48e4984591973b0|' k8s/deployment.yaml
+                  fi
+                  oc apply -f k8s/
+                  oc rollout status deployment/shopcarts --timeout=5m
+                workingDir: /workspace/source
+            workspaces:
+              - name: source
+          duration: 36s
+          reason: Succeeded
+      - name: bdd-tests
+        params:
+          - name: base-url
+            value: 'https://shopcarts-ian-su-dev.apps.rm3.7wse.p1.openshiftapps.com'
+          - name: wait-seconds
+            value: '60'
+          - name: driver
+            value: chrome
+        runAfter:
+          - deploy
+        taskRef:
+          kind: Task
+          name: behave
+        workspaces:
+          - name: source
+            workspace: pipeline-workspace
+        status:
+          artifacts: {}
+          completionTime: '2025-12-09T18:33:12Z'
+          conditions:
+            - lastTransitionTime: '2025-12-09T18:33:12Z'
+              message: All Steps have completed executing
+              reason: Succeeded
+              status: 'True'
+              type: Succeeded
+          podName: cd-pipeline-run-hnjh6-bdd-tests-pod
+          provenance:
+            featureFlags:
+              maxResultSize: 4096
+              awaitSidecarReadiness: true
+              coschedule: workspaces
+              resultExtractionMethod: termination-message
+              enforceNonfalsifiability: none
+              enableAPIFields: beta
+              runningInEnvWithInjectedSidecars: true
+              verificationNoMatchPolicy: ignore
+              enableProvenanceInStatus: true
+          startTime: '2025-12-09T18:32:07Z'
+          steps:
+            - container: step-behave
+              imageID: 'quay.io/rofrano/pipeline-selenium@sha256:0c7c8bce423a7b8435bcf2bdbc63a8e167727345574c86023e16399031a3aa38'
+              name: behave
+              terminated:
+                containerID: 'cri-o://a3fcd94a93298d4dabcaeab2caee43466a5d1ece914c3e87fcb229d8264eb98c'
+                exitCode: 0
+                finishedAt: '2025-12-09T18:33:11Z'
+                reason: Completed
+                startedAt: '2025-12-09T18:32:32Z'
+              terminationReason: Completed
+          taskSpec:
+            description: This task can be used to perform bdd tests with behave.
+            params:
+              - description: The url of the application to test
+                name: base-url
+                type: string
+              - default: '60'
+                description: The number of seconds to wait for a reply
+                name: wait-seconds
+                type: string
+              - default: chrome
+                description: The web driver to use (chrome or firefox)
+                name: driver
+                type: string
+            steps:
+              - computeResources: {}
+                env:
+                  - name: BASE_URL
+                    value: 'https://shopcarts-ian-su-dev.apps.rm3.7wse.p1.openshiftapps.com'
+                  - name: WAIT_SECONDS
+                    value: '60'
+                  - name: DRIVER
+                    value: chrome
+                image: quay.io/rofrano/pipeline-selenium
+                name: behave
+                script: |
+                  #!/bin/bash
+                  set -e
+                  export PATH=$PATH:$HOME/.local/bin:
+
+                  echo "***** Installing dependencies *****"
+                  if [ -e "poetry.lock" ]; then
+                    echo "Found poetry.lock file: using poetry"
+                    python -m pip install poetry poetry-plugin-export
+                    poetry export --with=dev -f requirements.txt --output requirements.txt
+                  elif [ -e "Pipfile" ]; then
+                    echo "Found Pipfile file: using pipenv ..."
+                    python -m pip install --upgrade pip pipenv
+                    pipenv requirements --dev > requirements.txt
+                  fi
+                  python -m pip install --user -r requirements.txt
+
+                  echo "***** Running Tests *****"
+                  behave
+                workingDir: /workspace/source
+            workspaces:
+              - name: source
+          duration: 1m 5s
+          reason: Succeeded
+    workspaces:
+      - description: 'Shared workspace for source, manifests, and build context'
+        name: pipeline-workspace
+      - description: Docker registry config (config.json) for kaniko
+        name: dockerconfig
+  provenance:
+    featureFlags:
+      maxResultSize: 4096
+      awaitSidecarReadiness: true
+      coschedule: workspaces
+      resultExtractionMethod: termination-message
+      enforceNonfalsifiability: none
+      enableAPIFields: beta
+      runningInEnvWithInjectedSidecars: true
+      verificationNoMatchPolicy: ignore
+      enableProvenanceInStatus: true
+  startTime: '2025-12-09T18:28:45Z'
