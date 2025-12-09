@@ -263,6 +263,28 @@ spec:
         echo ""
         echo "Manifests applied successfully!"
         echo ""
+    
+    - name: update-deployment
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+        
+        echo "=========================================="
+        echo "Updating Deployment: $(params.deployment-name)"
+        echo "New Image: $(params.image-name)"
+        echo "Namespace: $(params.namespace)"
+        echo "=========================================="
+        
+        # Update the deployment with the new image
+        oc set image deployment/$(params.deployment-name) \
+          $(params.deployment-name)=$(params.image-name) \
+          -n $(params.namespace)
+        
+        echo ""
+        echo "Deployment image updated successfully!"
+        echo ""
 
 ---
 apiVersion: tekton.dev/v1beta1
