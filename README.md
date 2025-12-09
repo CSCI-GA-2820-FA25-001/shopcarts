@@ -209,6 +209,75 @@ Run pylint to check code quality:
 make lint
 ```
 
+
+## CI/CD Pipeline
+
+The project uses Tekton for continuous integration and deployment. The pipeline is automatically triggered on pushes to the repository.
+
+### Pipeline Stages
+
+1. **Clone** - Clone the repository
+2. **Lint** - Run pylint on the codebase
+3. **Unit Tests** - Run pytest with database connection
+4. **Build** - Build and push Docker image with Kaniko
+5. **Deploy** - Deploy to OpenShift cluster
+6. **BDD Tests** - Run Behave tests against deployed service
+
+### Pipeline Parameters
+
+- `APP_NAME` - Application name (default: shopcarts)
+- `GIT_REPO` - Git repository URL
+- `IMAGE_NAME` - Docker image name
+- `GIT_REVISION` - Git branch/tag (default: main)
+- `BASE_URL` - Route URL for BDD testing
+
+### Manual Pipeline Run
+
+```bash
+# Get the Route URL
+ROUTE_URL=$(oc get route shopcarts -o jsonpath='https://{.spec.host}')
+
+# Create a PipelineRun
+cat <<EOF | oc apply -f -
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: cd-pipeline-manual-
+spec:
+  serviceAccountName: pipeline
+  pipelineRef:
+    name: cd-pipeline
+  params:
+    - name: APP_NAME
+      value: shopcarts
+    - name: GIT_REPO
+      value: https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git
+    - name: IMAGE_NAME
+      value: image-registry.openshift-image-registry.svc:5000/$(oc project -q)/shopcarts
+    - name: GIT_REVISION
+      value: main
+    - name: BASE_URL
+      value: $ROUTE_URL
+  workspaces:
+    - name: pipeline-workspace
+      persistentVolumeClaim:
+        claimName: pipeline-pvc
+    - name: dockerconfig
+      emptyDir: {}
+EOF
+```
+
+### View Pipeline Logs
+
+```bash
+# Watch pipeline runs
+oc get pipelinerun -w
+
+# Get logs for specific task
+LATEST_RUN=$(oc get pipelinerun --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}')
+oc logs -l tekton.dev/pipelineRun=$LATEST_RUN -l tekton.dev/pipelineTask=
+```
+
 ## API Details
 
 ### <u> Root Endpoint </u>
