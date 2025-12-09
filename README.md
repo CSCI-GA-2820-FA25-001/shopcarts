@@ -42,6 +42,64 @@ The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, 
 - **Kaniko** - Container image building
 - **K3D** - Local Kubernetes development
 
+## Architecture
+
+### Deployment Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    OpenShift Cluster                     │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │                  Route (External)                   │ │
+│  │    https://shopcarts-<namespace>.apps.cluster.com  │ │
+│  └─────────────────┬────────────────────────────────┬─┘ │
+│                    │                                 │   │
+│  ┌─────────────────▼────────────┐   ┌───────────────▼──┐│
+│  │   ShopCarts Service          │   │  Ingress/Route   ││
+│  │   ClusterIP:8080             │   │  (Traefik)       ││
+│  └─────────────────┬────────────┘   └──────────────────┘│
+│                    │                                     │
+│  ┌─────────────────▼────────────┐                       │
+│  │   ShopCarts Deployment       │                       │
+│  │   - Replicas: 1              │                       │
+│  │   - Container Port: 8080     │                       │
+│  │   - Health Checks: /health   │                       │
+│  │   - Readiness & Liveness     │                       │
+│  └─────────────────┬────────────┘                       │
+│                    │                                     │
+│  ┌─────────────────▼────────────┐                       │
+│  │   PostgreSQL StatefulSet     │                       │
+│  │   - Port: 5432               │                       │
+│  │   - Persistent Volume (1Gi)  │                       │
+│  │   - ConfigMap & Secrets      │                       │
+│  └──────────────────────────────┘                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### CI/CD Pipeline
+
+```
+┌──────────┐    ┌──────────┐    ┌────────────┐    ┌────────┐    ┌────────────┐
+│  GitHub  │───▶│  Webhook │───▶│   Tekton   │───▶│ Deploy │───▶│  BDD Tests │
+│  Push    │    │ Trigger  │    │  Pipeline  │    │   App  │    │  (Behave)  │
+└──────────┘    └──────────┘    └────────────┘    └────────┘    └────────────┘
+                                       │
+                        ┌──────────────┼──────────────┐
+                        ▼              ▼              ▼
+                   ┌────────┐   ┌──────────┐   ┌──────────┐
+                   │  Clone │   │   Lint   │   │  Tests   │
+                   │  Repo  │   │ (Pylint) │   │ (Pytest) │
+                   └────────┘   └──────────┘   └──────────┘
+                                       │
+                                       ▼
+                                ┌──────────┐
+                                │  Build   │
+                                │  Image   │
+                                │ (Kaniko) │
+                                └──────────┘
+```
+
 ## Setup Instructions
 
 ### 1. Clone the Repository
