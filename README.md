@@ -100,35 +100,87 @@ The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, 
                                 └──────────┘
 ```
 
+
 ## Setup Instructions
 
-### 1. Clone the Repository
-In a new terminal window:
+### Local Development
+
+#### 1. Clone the Repository
 ```bash
 git clone https://github.com/CSCI-GA-2820-FA25-001/shopcarts.git
 cd shopcarts
 ```
-### 2. Open in VSCode
-Assuming VSCode and Docker are already installed, run this:
+
+#### 2. Open in VSCode with DevContainer
+Assuming VSCode and Docker are installed:
 ```bash
 code .
 ```
-and click "Reopen in Container"
+Click "Reopen in Container" when prompted.
 
-### 3. Run Tests
+#### 3. Run Tests
 To ensure everything is working:
 ```bash
 make test
 ```
 
-### 4. Running the Service
+#### 4. Run the Service Locally
 ```bash
-  make run
-  # or
-  flask run -h 0.0.0.0 -p 8080
-  # or
-  honcho start
+make run
+# or
+flask run -h 0.0.0.0 -p 8080
+# or
+honcho start
 ```
+
+The service will be available at `http://localhost:8080`
+
+### Kubernetes/OpenShift Deployment
+
+#### Prerequisites
+- OpenShift CLI (`oc`) or Kubernetes CLI (`kubectl`)
+- Access to an OpenShift/Kubernetes cluster
+- Tekton Pipelines installed on the cluster
+
+#### 1. Create Kubernetes Resources
+```bash
+# Apply all Kubernetes manifests
+oc apply -f k8s/
+
+# Or apply specific resources
+oc apply -f k8s/postgresql/
+oc apply -f k8s/deployment.yaml
+oc apply -f k8s/service.yaml
+oc apply -f k8s/route.yaml
+```
+
+#### 2. Set Up Tekton Pipeline
+```bash
+# Apply pipeline resources
+oc apply -f .tekton/tasks.yaml
+oc apply -f .tekton/pipeline.yaml
+
+# Apply event triggers (for GitHub webhooks)
+oc apply -f .tekton/events/
+```
+
+#### 3. Verify Deployment
+```bash
+# Check pods
+oc get pods
+
+
+# Check services
+oc get svc
+
+# Check route
+oc get route shopcarts
+
+# Test the service
+ROUTE_URL=$(oc get route shopcarts -o jsonpath='{.spec.host}')
+curl https://$ROUTE_URL/health
+```
+
 ## API Details
 
 ### <u> Root Endpoint </u>
