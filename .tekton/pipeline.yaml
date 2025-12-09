@@ -51,12 +51,22 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
+    # Run unit tests using pytest
+    - name: unit-tests
+      runAfter:
+        - lint
+      taskRef:
+        name: pytest-env
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
 
     # Build and push Docker image once using Tekton Hub kaniko Task,
     # tagging it with both the Git commit SHA and latest.
     - name: build-image
       runAfter:
-        - lint
+        - unit-tests
       taskRef:
         name: kaniko
         kind: Task
