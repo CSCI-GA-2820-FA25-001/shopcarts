@@ -3,7 +3,7 @@ kind: Pipeline
 metadata:
   name: cd-pipeline
 spec:
-  description: Minimal placeholder pipeline for ShopCarts; tasks to be added later.
+  description: CI/CD Pipeline for ShopCarts microservice with deployment and BDD testing
   params:
     - name: APP_NAME
       description: Application name used for Kubernetes resources
@@ -18,6 +18,9 @@ spec:
       description: Git revision to build
       type: string
       default: main
+    - name: BASE_URL
+      description: The Route hostname for BDD testing (e.g., http://shopcarts-dev.apps.cluster.com)
+      type: string
   workspaces:
     - name: pipeline-workspace
       description: Shared workspace for source, manifests, and build context
