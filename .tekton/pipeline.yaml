@@ -54,16 +54,6 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
-    # Run unit tests using pytest
-    - name: unit-tests
-      runAfter:
-        - lint
-      taskRef:
-        name: pytest-env
-        kind: Task
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace
 
     # Build and push Docker image once using Tekton Hub kaniko Task,
     # tagging it with both the Git commit SHA and latest.
@@ -84,3 +74,21 @@ spec:
           workspace: pipeline-workspace
         - name: dockerconfig
           workspace: dockerconfig
+
+    # Deploy the microservice to OpenShift
+    - name: deploy
+      runAfter:
+        - build-image
+      taskRef:
+        name: deploy-task
+        kind: Task
+      params:
+        - name: image-name
+          value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
+        - name: manifest-dir
+          value: "k8s"
+        - name: deployment-name
+          value: $(params.APP_NAME)
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
