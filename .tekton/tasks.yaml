@@ -213,6 +213,20 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
+  name: deploy-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Deployment
+    tekton.dev/pipelines.minVersion: "0.17.0"
+    tekton.dev/tags: openshift, deploy
+    tekton.dev/displayName: "deploy task"
+    tekton.dev/platforms: "linux/amd64"
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
   name: behave
   labels:
     app.kubernetes.io/version: "0.1"
