@@ -59,7 +59,7 @@ spec:
     # tagging it with both the Git commit SHA and latest.
     - name: build-image
       runAfter:
-        - unit-tests
+        - lint
       taskRef:
         name: kaniko
         kind: Task
@@ -110,3 +110,4 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
+          
