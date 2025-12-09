@@ -101,7 +101,7 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
-   - name: behave-tests
+    - name: behave-tests
       runAfter:
         - deploy
       taskRef:
