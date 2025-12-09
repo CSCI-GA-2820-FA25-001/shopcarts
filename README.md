@@ -8,6 +8,18 @@ This microservice provides a RESTful API for managing customer **ShopCarts** and
 
 The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, developed using **Test Driven Development (TDD)**, and deployed to **OpenShift** with a complete **CI/CD pipeline** using **Tekton**.
 
+## Features
+
+- Full CRUD operations for ShopCarts and Items
+- RESTful API design with proper HTTP methods and status codes
+- PostgreSQL database with SQLAlchemy ORM
+- Comprehensive test coverage (≥95%)
+- Behavior-Driven Development (BDD) tests with Behave
+- Automated CI/CD pipeline with Tekton
+- Kubernetes/OpenShift deployment with health checks
+- Container registry integration
+- External access via OpenShift Routes
+
 ## Technology Stack
 - Python 3.11+
 - Flask 3.x
@@ -15,8 +27,6 @@ The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, 
 - PostgreSQL 15 (via Docker)
 - Pytest + Coverage (≥ 95%)
 - Pylint (PEP 8 compliance)
-
-
 
 ## Setup Instructions
 
