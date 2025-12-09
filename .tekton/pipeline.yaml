@@ -81,3 +81,18 @@ spec:
           workspace: pipeline-workspace
         - name: dockerconfig
           workspace: dockerconfig
+
+    - name: deploy
+      runAfter:
+        - build-image
+      taskRef:
+        name: deploy-image
+        kind: Task
+      params:
+        - name: image-name
+          value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
+        - name: manifest-dir
+          value: k8s
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
