@@ -481,3 +481,12 @@ Response: `204 No Content`
 | `make deploy` | Deploy to Kubernetes |
 | `make build` | Build Docker image |
 | `make push` | Push image to registry |
+
+## Authors
+
+NYU DevOps Fall 2025 - Team ShopCarts
+
+## Acknowledgments
+
+- Professor John Rofrano for the DevOps course structure
+- NYU Center for Data Science
