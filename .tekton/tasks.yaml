@@ -285,6 +285,39 @@ spec:
         echo ""
         echo "Deployment image updated successfully!"
         echo ""
+    
+    - name: verify-deployment
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+        
+        echo "=========================================="
+        echo "Verifying Deployment Rollout"
+        echo "=========================================="
+        
+        # Wait for the rollout to complete
+        oc rollout status deployment/$(params.deployment-name) \
+          -n $(params.namespace) \
+          --timeout=5m
+        
+        echo ""
+        echo "Rollout completed successfully!"
+        echo ""
+        
+        # Display the current deployment status
+        echo "Current deployment status:"
+        oc get deployment $(params.deployment-name) -n $(params.namespace)
+        
+        echo ""
+        echo "Current pods:"
+        oc get pods -l app=$(params.deployment-name) -n $(params.namespace)
+        
+        echo ""
+        echo "=========================================="
+        echo "Deployment verification complete!"
+        echo "=========================================="
 
 ---
 apiVersion: tekton.dev/v1beta1
