@@ -54,12 +54,22 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
+    # Run unit tests using pytest
+    - name: unit-tests
+      runAfter:
+        - lint
+      taskRef:
+        name: pytest-env
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
 
     # Build and push Docker image once using Tekton Hub kaniko Task,
     # tagging it with both the Git commit SHA and latest.
     - name: build-image
       runAfter:
-        - lint
+        - unit-tests
       taskRef:
         name: kaniko
         kind: Task
@@ -76,9 +86,24 @@ spec:
           workspace: dockerconfig
 
     # Run Behave tests using behave task
-    - name: behave-tests
+ 
+    - name: deploy
       runAfter:
         - build-image
+      taskRef:
+        name: deploy-image
+        kind: Task
+      params:
+        - name: image-name
+          value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
+        - name: manifest-dir
+          value: k8s
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+   - name: behave-tests
+      runAfter:
+        - deploy
       taskRef:
         name: behave
         kind: Task
