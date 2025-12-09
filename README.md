@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/CSCI-GA-2820-FA25-001/shopcarts/actions/workflows/ci.yml/badge.svg)](https://github.com/CSCI-GA-2820-FA25-001/shopcarts/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/CSCI-GA-2820-FA25-001/shopcarts/branch/main/graph/badge.svg)](https://codecov.io/gh/CSCI-GA-2820-FA25-001/shopcarts)
+
 ## Overview
 
 This microservice provides a RESTful API for managing customer **ShopCarts** and their **Items**. It allows clients to **create, read, update, delete, and list** shopcarts and items, following REST best practices.
@@ -100,7 +101,6 @@ The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, 
                                 └──────────┘
 ```
 
-
 ## Setup Instructions
 
 ### Local Development
@@ -169,7 +169,6 @@ oc apply -f .tekton/events/
 # Check pods
 oc get pods
 
-
 # Check services
 oc get svc
 
@@ -180,7 +179,6 @@ oc get route shopcarts
 ROUTE_URL=$(oc get route shopcarts -o jsonpath='{.spec.host}')
 curl https://$ROUTE_URL/health
 ```
-
 
 ## Testing
 
@@ -274,9 +272,8 @@ oc get pipelinerun -w
 
 # Get logs for specific task
 LATEST_RUN=$(oc get pipelinerun --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}')
-oc logs -l tekton.dev/pipelineRun=$LATEST_RUN -l tekton.dev/pipelineTask=
+oc logs -l tekton.dev/pipelineRun=$LATEST_RUN -l tekton.dev/pipelineTask=<task-name>
 ```
-
 
 ## API Documentation
 
