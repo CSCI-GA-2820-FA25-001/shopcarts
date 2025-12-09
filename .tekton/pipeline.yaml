@@ -19,7 +19,7 @@ spec:
       type: string
       default: main
     - name: BASE_URL
-      description: The Route hostname for BDD testing (e.g., http://shopcarts-dev.apps.cluster.com)
+      description: Base URL of the deployed service (Route hostname) for BDD tests
       type: string
   workspaces:
     - name: pipeline-workspace
@@ -91,26 +91,23 @@ spec:
         - name: dockerconfig
           workspace: dockerconfig
 
-    # Deploy the microservice to OpenShift
+    # Run Behave tests using behave task
+ 
     - name: deploy
       runAfter:
         - build-image
       taskRef:
-        name: deploy-task
+        name: deploy-image
         kind: Task
       params:
         - name: image-name
           value: $(params.IMAGE_NAME):$(tasks.clone.results.commit)
         - name: manifest-dir
-          value: "k8s"
-        - name: deployment-name
-          value: $(params.APP_NAME)
+          value: k8s
       workspaces:
         - name: source
           workspace: pipeline-workspace
-
-    # Run BDD tests using Behave against the deployed microservice
-    - name: bdd-tests
+    - name: behave-tests
       runAfter:
         - deploy
       taskRef:
@@ -119,11 +116,6 @@ spec:
       params:
         - name: base-url
           value: $(params.BASE_URL)
-        - name: wait-seconds
-          value: "60"
-        - name: driver
-          value: "chrome"
       workspaces:
         - name: source
           workspace: pipeline-workspace
-          

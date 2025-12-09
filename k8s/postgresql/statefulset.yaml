@@ -42,8 +42,8 @@ spec:
                   key: postgres_db
           volumeMounts:
             - name: postgres-storage
-              # You can keep /var/lib/postgresql, but the image defaults to /var/lib/postgresql/data
-              mountPath: /var/lib/postgresql/data
+              # You can keep /var/lib/postgre, but the image defaults to /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
           resources:
             limits:
               cpu: "0.50"
@@ -54,4 +54,4 @@ spec:
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
-            claimName: postgres-pvc
+            claimName: postgresql
