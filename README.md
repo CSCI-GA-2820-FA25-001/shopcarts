@@ -467,3 +467,17 @@ Response: `204 No Content`
 | `PORT` | Application port | `8080` |
 | `SECRET_KEY` | Flask secret key for sessions | `sup3r-s3cr3t` |
 | `BASE_URL` | Base URL for BDD tests | `http://localhost:8080` |
+
+## Development Commands
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Display available commands |
+| `make install` | Install dependencies |
+| `make test` | Run unit tests with coverage |
+| `make lint` | Run pylint on code |
+| `make run` | Run the service locally |
+| `make cluster` | Create local K3D cluster |
+| `make deploy` | Deploy to Kubernetes |
+| `make build` | Build Docker image |
+| `make push` | Push image to registry |
