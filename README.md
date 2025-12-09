@@ -3,15 +3,10 @@
 [![Build Status](https://github.com/CSCI-GA-2820-FA25-001/shopcarts/actions/workflows/ci.yml/badge.svg)](https://github.com/CSCI-GA-2820-FA25-001/shopcarts/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/CSCI-GA-2820-FA25-001/shopcarts/branch/main/graph/badge.svg)](https://codecov.io/gh/CSCI-GA-2820-FA25-001/shopcarts)
 ## Overview
-This microservice provides a RESTful API for managing customer **ShopCarts** and their **Items**.  
-It allows clients to **create, read, update, delete, and list** shopcarts and items, following REST best practices.  
-The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, and developed using **Test Driven Development (TDD)**.
 
+This microservice provides a RESTful API for managing customer **ShopCarts** and their **Items**. It allows clients to **create, read, update, delete, and list** shopcarts and items, following REST best practices.
 
-## Sprint 1 Goal
-**Develop a local REST API** implementing CRUD operations for ShopCarts and Items.  
-Testing, linting, and documentation are part of every story.
-
+The service is implemented using **Flask**, **SQLAlchemy**, and **PostgreSQL**, developed using **Test Driven Development (TDD)**, and deployed to **OpenShift** with a complete **CI/CD pipeline** using **Tekton**.
 
 ## Technology Stack
 - Python 3.11+
