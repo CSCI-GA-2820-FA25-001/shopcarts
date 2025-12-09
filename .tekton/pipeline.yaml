@@ -92,3 +92,21 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-workspace
+
+    # Run BDD tests using Behave against the deployed microservice
+    - name: bdd-tests
+      runAfter:
+        - deploy
+      taskRef:
+        name: behave
+        kind: Task
+      params:
+        - name: base-url
+          value: $(params.BASE_URL)
+        - name: wait-seconds
+          value: "60"
+        - name: driver
+          value: "chrome"
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
